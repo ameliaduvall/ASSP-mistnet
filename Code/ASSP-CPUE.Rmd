@@ -1,0 +1,376 @@
+---
+title: "ASSP CPUE GLMM"
+author: "Amelia DuVall (ajduvall@uw.edu)"
+date: "July 2020"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is `r paste0("v.", (Sys.Date()))`
+
+```{r set_options, message = FALSE}
+knitr::opts_chunk$set(message = FALSE)
+
+## load packages
+library(easypackages)
+libraries("lme4", "here", "tidyverse", "ggplot2", "lubridate", 
+          "faraway", "anchors", "readxl")
+```
+
+
+
+```{r data}
+## read-in data 
+ASSP <- read.csv(here("Data", "mistnet_w_weather.csv"))
+CPUE <- CPUE <- read_excel(here("Data", "CHIS_ASSP_mistnet_database_04292020.xlsx"), 
+                   sheet = "CPUE", col_names = TRUE, na = c("NA", "ND"))
+
+## join with session_ID
+dfr <- inner_join(ASSP, CPUE, "session_ID") %>%
+  mutate(Year = year(start), island_code = island_code.x,
+         site_code = site_code.x, month = month.x, day = day.x,) %>%
+  dplyr::select("island_code", "site_code", "month", "day", "year", 
+                "start":"Illu", "CPUEstd") %>%
+  filter(!is.na(CPUEstd))
+
+predictors <- as.data.frame(colnames(dfr)) %>%
+  slice(8:23) %>%
+  rename(Predictors = "colnames(dfr)") # 16 total predictors
+
+## scale predictors
+df <- dfr %>%
+  mutate_at(c("tot_precip", "wind_u", "wind_v", "wave_height", "wave_dir", "wave_period",
+              "tot_cloud", "low_cloud", "pressure", "surface_pressure", "sst", "temp_c",
+              "dew_point", "Moonup", "MoonAltitude", "Illu"), scale) %>%
+  mutate(logCPUE = log(CPUEstd))
+
+## explore data
+ggplot(df) +
+  geom_histogram(mapping = aes(x = CPUEstd), bins = 20) +
+  xlab("CPUE") + ylab("Frequency") +
+  theme_minimal()
+# Appropriate to use normal distribution?
+
+## try logCPUE
+ggplot(df) +
+  geom_histogram(mapping = aes(x = logCPUE), bins = 20) +
+  xlab("logCPUE") + ylab("Frequency") +
+  theme_minimal()
+
+## other plots
+effort <- df %>%
+  group_by(year, site_code) %>%
+  summarize(effort = n())
+
+ggplot(effort) + 
+  geom_point(mapping = aes(x = as.factor(year), y = effort, color = site_code), 
+             position = "jitter") +
+  xlab("Year") + ylab("No. sessions") +
+  theme_minimal()
+
+```
+
+## Modeling
+
+```{r nullmodel}
+## fit intercept-only model
+# site and year as random effects
+nmRE <- lmer(logCPUE ~ 1 + (1 | site_code) + (1 | year), data = df)
+# boundary (singular) fit: see ?isSingular
+# study sample too small for REs?
+# use sequence as RE? Can also test for autocorrelation
+# could also look at cumulative minutes
+
+# site as explanation for CPUE?
+site <- lm(CPUEstd ~ site_code, data = df)
+
+# try w/o REs
+nm <- lm(logCPUE ~ 1, data = df)
+summary(nm)
+
+## model diagnostics
+# set plot area
+par(mai = c(0.9, 0.9, 0.6, 0.1),
+omi = c(0, 0, 0, 0),
+mfrow = c(1,2), cex.lab = 1.2)
+
+## qq resids
+qqnorm(residuals(nm), main = "QQ plot (residuals)", las = 1, pch = 16)
+qqline(residuals(nm))
+
+## residuals v fitted values
+plot(fitted(nm), residuals(nm), las = 1, pch = 16,
+xlab = "Fitted", ylab = "Residuals",
+main = "Residuals vs fitted")
+abline(h=0, lty = "dashed")
+```
+
+```{r fullmodel}
+## check for correlation between predictors
+cp <- as.data.frame((round(cor(df[,8:23]), 2)))
+# wave period and wave direction
+# tot cloud and low cloud
+# surface pressure and pressure
+# sst and temp c
+# sst and dew point
+# dew point and temp c
+# moonup and illu
+
+toppreds <- c("wind_u", "wind_v", "tot_cloud", "dew_point", "Moonup", "MoonAltitude", "Illu")
+# Combine moon variables? Moonup * Illu?
+# How to deal with wind? 
+# Exract wind speed at midnight
+
+## final predictors
+
+## fit full model
+fm <- lm(logCPUE ~ Type + PDO + Fish + PDSI + CUTI + (1 | Plot) + (1 | Year), 
+            data = SCMU, family = binomial)
+summary(fm)
+
+## model selection
+## create data frame specifying predictors to include
+predictors <- as.data.frame(matrix(c(FALSE, TRUE), 2, 5)) # 5 potential predictors
+
+## add column names 
+cov_names <- colnames(predictors) <- colnames(SCMU)[5:9]
+
+## create set of all possible combinations
+full_set <- expand.grid(predictors) # 32 combinations
+
+## select models with correlated predictors
+ii <- which(full_set$PDO + full_set$Fish == 2 |
+              full_set$PDO + full_set$CUTI == 2) # 12 models
+
+## create reduced set of models and convert to a matrix for easier indexing
+use_set <- as.matrix(full_set[-ii,])
+
+## number of models in set
+(n_mods <- nrow(use_set)) # 20 models out of a potential 32 (2^5)
+
+## create empty matrix for storing results
+mod_res <- matrix(NA, n_mods, 2)
+colnames(mod_res) <- c("AIC", "BIC")
+
+## fit models and store AIC & BIC
+for(i in 1:n_mods) {
+  if(i == 1) {
+    fmla <- "Success ~ 1 + (1 | Plot) + (1 | Year)"
+  } else {
+    fmla <- paste("Success ~ (1 | Plot) + (1 | Year) +", paste(cov_names[use_set[i,]], collapse = " + "))
+  }
+  mod_fit <- glmer(as.formula(fmla), data = SCMU, family = binomial)
+  mod_res[i,"AIC"] <- AIC(mod_fit)
+  mod_res[i,"BIC"] <- BIC(mod_fit) 
+}
+
+## create empty matrix for storing results
+delta_res <- matrix(NA, n_mods, 2)
+colnames(delta_res) <- c("deltaAIC", "deltaBIC")
+
+## convert IC to deltaIC
+delta_res[,"deltaAIC"] <- mod_res[,"AIC"] - min(mod_res[,"AIC"])
+delta_res[,"deltaBIC"] <- mod_res[,"BIC"] - min(mod_res[,"BIC"])
+(delta_res <- round(delta_res, 2)) # round results
+
+## create df with mod results
+mp <- as.data.frame(use_set)
+
+for (i in 1:length(mp)) {
+   mp[[i]] <- str_replace(mp[[i]], "TRUE", colnames(mp)[i])
+}
+
+for (i in 1:length(mp)) {
+   mp[[i]] <- str_replace(mp[[i]], "FALSE", " ")
+}
+
+mpfe <- mp %>%
+  mutate(FEs = paste(Type, PDO, Fish, CUTI, PDSI, sep = " "))
+
+usmr <- mpfe %>%
+  mutate(k = as.vector(rowSums(use_set) + 4)) %>% #2 RE's + 2 nest type (3 nest type FE total)
+  mutate(modelno = 1:20) 
+
+allm <- as.data.frame(delta_res) %>%
+  mutate(modelno = 1:20) %>%
+  arrange(deltaAIC) %>%
+  left_join(usmr, by = "modelno") %>%
+  dplyr::select(modelno, FEs, k, deltaAIC, deltaBIC)
+
+## create df with top models
+bestm <- allm %>%
+  filter(deltaAIC <= 2) # 9 competitive models 
+# all these models contain Nest Type as a predictor
+```
+
+```{r bestmod, echo = FALSE, message = FALSE, warning = FALSE, include = FALSE}
+bm <- glmer(Success ~ Type + (1 | Plot) + (1 | Year), data = SCMU, family = binomial)
+summary(bm)
+sumary(bm)
+mm <- model.matrix(bm)
+
+## extract predicted values and plot
+preds <- predict(bm, type = "response") # including the "type" argument keep the results between 0-1
+ggplot() + geom_histogram(mapping = aes(preds)) + theme_minimal()
+
+## extract residuals and plot
+resids <- residuals(bm, type = "response") # including the "type" argument keep the results between 0-1
+ggplot() + geom_histogram(mapping = aes(resids)) + theme_minimal()
+
+## extract coeffs and random effects
+coef(bm)
+artificial <- 1 / (1 + exp(-(0.15064))) # intercept
+crevice <- 1 / (1 + exp(-(0.15064 + 0.04569))) 
+shrub <- 1 / (1 + exp(-(0.15064 + 1.02356))) 
+ranefyr <- ranef(bm)$Year
+ranefpl <- ranef(bm)$Plot
+
+## estimated mean success
+eta <- predict(bm, type = "response")
+
+## mean response
+mean(est <- 1 / (1 + exp(-eta)))
+```
+
+
+```{r diagnostics, echo = FALSE, message = FALSE, warning = FALSE, include = FALSE}
+## Q-Q Plots
+## set plot area
+par(mai = c(0.9, 0.9, 0.6, 0.1),
+    omi = c(0, 0, 0, 0),
+    mfrow = c(1,2), cex.lab = 1.2)
+
+# qq resids
+qqnorm(resids, main = "QQ plot (residuals)", las = 1, pch = 16)
+qqline(resids)
+
+# qq Plot RE
+qqnorm(unlist(ranefpl), main = "QQ plot (Plot RE)", las = 1, pch = 16)
+qqline(unlist(ranefpl))
+
+# qq Year RE
+qqnorm(unlist(ranefyr), main = "QQ plot (Year RE)", las = 1, pch = 16)
+qqline(unlist(ranefyr))
+
+## plot residuals versus fitted values
+yh <- fitted(bm, type = "response")
+plot(yh, resids, las = 1, pch = 16,
+     xlab = "Fitted", ylab = "Residuals",
+     main = "Residuals vs fitted")
+abline(h=0, lty = "dashed")
+
+## Levene's test
+## split residuals into 2 groups
+g1 <- resids[yh <= median(yh)]
+g2 <- resids[yh > median(yh)]
+
+## Levene's test
+var.test(g1, g2)
+# We would reject the null hypothesis that the variances are equal. 
+
+## Goodness of fit
+## Pearson's X^2 statistic
+X2 <- sum((success - yh)^2/yh)
+df <- nn-5 # 3 fixed effects, 2 random effects
+
+## likelihood ratio test
+pchisq(X2, df = 1323, lower.tail = FALSE)
+# large p-value, cannot reject H_0
+
+## check for overdispersion 
+c_hat <- deviance(bm)/df
+# close to 1
+
+## Likelihood ratio tests  
+## run model with plot RE only
+bm_plot <- glmer(Success ~ Type + (1 | Plot), data = SCMU, family = binomial)
+## run model with year RE only
+bm_yr <- glmer(Success ~ Type + (1 | Year), data = SCMU, family = binomial)
+## run model with both REs (same as top model)
+
+## conduct an LRT to see if the variance of the Plot RE is contributing useful info
+test_1 <- 2 * (logLik(bm) - logLik(bm_yr))
+pchisq(as.numeric(test_1), df = 1, lower.tail = FALSE)
+# There is support for inclusion of Plot as an RE
+
+## check for contribution of Year RE
+test_2 <- 2 * (logLik(bm) - logLik(bm_plot))
+pchisq(as.numeric(test_2), df = 1, lower.tail = FALSE)
+# There is support for inclusion of Year as an RE
+
+## Bootstrapping  to test for evidence against including multiple random effects in the same model
+## set random seed 
+set.seed(514)
+
+## fit null model with no RE's 
+nbm <- lm(Success ~ Type, data = SCMU)
+
+## calculate likelihood ratio (difference in log-likelihood)
+lambda <- 2 * (logLik(bm) - logLik(nbm))
+
+## number of bootstrapped samples
+nb <- 1000
+
+## empty vector for storing LRT statistics
+LRT_boot <- rep(NA, nb)
+
+## bootstrapping
+for(i in 1:nb) { # repeat nb times
+  sim_data <- unlist(simulate(nbm)) # simulate data from null model
+  m_null <- lm(sim_data ~ Type, data = SCMU) # fit null model to sim data 
+  m_alt <- lmer(sim_data ~ Type + (1 | Year) + (1 | Plot), data = SCMU, REML = FALSE) # fit RE model
+  LRT_boot[i] <- as.numeric(2*(logLik(m_alt) - logLik(m_null))) # calculate likelihood ratio 
+}
+
+## calculate approximate p-value
+mean(LRT_boot > lambda)
+# none of the bootstrapped samples had a test statistic larger than the original value of lambda
+```
+
+# Results
+
+
+## Tables
+
+\vspace{0.25in}
+
+\setlength{\leftskip}{0.5in}
+\setlength{\rightskip}{0.5in}
+
+\small
+
+`r tbl_cap(1, caption = "Model selection results.", display = "full")` 
+
+\normalsize
+
+\setlength{\leftskip}{0in}
+\setlength{\rightskip}{0in}
+
+```{r tbl, echo = FALSE}
+tbl <- allm
+
+# print table
+knitr::kable(tbl,
+             format = "latex",
+             booktabs = TRUE,
+             col.names = c("Model ID",
+                           "Fixed Effects",
+                           "$k$",
+                           "$\\Delta$AIC",
+                           "$\\Delta$BIC"),
+             escape = FALSE,
+             row.names = FALSE,
+             align = "ccr") %>%
+  kable_styling(position = "center", font_size = 10)
+```
+
+
+
+
+
+
+
+

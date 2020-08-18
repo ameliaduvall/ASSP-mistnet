@@ -1,0 +1,31 @@
+field,value,definition
+session_ID,character,"Unique identification code given to each mistnetting session structured as ""YYYYMMDD_island_subisland_sitename"". "
+island_code,character,"Abbreviation for island where mistnetting session occurred. See ""sites"" table."
+subisland_code,character,"Abbreviation for subisland where mistnetting session occurred. See ""sites"" table."
+site_code,character,"Abbreviation for site where mistnetting session occurred. See ""sites"" table. Some sites were grouped together due to their proximity (see ""site_alias"" field)."
+site_name,character,"Name of mistnetting site.See ""sites"" table. Some sites were grouped together due to their proximity (see ""site_alias"" field)."
+lat,numeric (10 sig figs),"Numerical value indicating latitude of mistnetting site in decimal degrees. ""ND"" indicates this information is not known (e.g., site was not recorded).  See ""sites"" table."
+long,numeric (10 sig figs),"Numerical value indicating longitude of mistnetting site in decimal degrees. ""ND"" indicates this information is not known (e.g., site was not recorded).  See ""sites"" table."
+month,numeric (1-12),Month in which mistnetting session began. 
+day,numeric (1-31),Day on which mistnetting session began. 
+year,numeric (YYYY),Year in which mistnetting session began. 
+series_ID,"numeric (1, 2, 3)","Numerical value indicating sequence of mistnetting session in series of consecutive nights of mistnetting sessions at the same site. Mistnetting sessions were considered a part of a consecutive series if >1 mistnetting sessions occurred at the same site within a 5-day window. Values used include: 1 ( first night of mistnetting session at the same site within a 5-day window; OR session was not part of a consective series of mistnetting sessions), 2 (second night of mistnetting session at the same site within a 5-day window), 3 ( third night of mistnetting session at the same site within a 5-day window)."
+net_open_1,time stamp,"Date and time at which mistnet was first opened during mistnetting session and/or vocalization was turned on. ""ND"" indicates this information was not recorded."
+net_close_1,time stamp,"Date and time at which mistnet was closed after first opened and/or vocalization was turned off or vocalization playback changed. ""ND"" indicates this information was not recorded."
+net_open_2,time stamp,"Date and time at which mistnet was opened for second time (if applicable) and/or vocalization was turned on. ""ND"" indicates this information was not recorded."
+net_close_2,time stamp,"Date and time at which mistnet was closed for second time (if applicable)and/or vocalization was turned off or vocalization playback changed. ""ND"" indicates this information was not recorded."
+net_open_3,time stamp,"Date and time at which mistnet was opened for third time (if applicable) and/or vocalization was turned on. ""ND"" indicates this information was not recorded."
+net_close_3,time stamp,"Date and time which mistnet was closed for third time (if applicable) and/or vocalization was turned off or vocalization playback changed. ""ND"" indicates this information was not recorded."
+net_open_4,time stamp,"Date and time which mistnet was opened for fourth time (if applicable) and/or vocalization was turned on. ""ND"" indicates this information was not recorded."
+net_close_4,time stamp,"Date and time which mistnet was closed for fourth time (if applicable) and/or vocalization was turned off or vocalization playback changed. ""ND"" indicates this information was not recorded."
+net_open_5,time stamp,"Date and time which mistnet was opened for fifth time (if applicable) and/or vocalization was turned on. ""ND"" indicates this information was not recorded."
+net_close_5,time stamp,"Date and time which mistnet was closed for fifth time (if applicable) and/or vocalization was turned off. ""ND"" indicates this information was not recorded."
+net_mesh,numeric,"Measurement of the size of the opening in net used and defined as one-half of the perimeter of one of the mesh squares of the net. This distance can best be measured by stretching a mesh square, measuring one of the four sides, and multiplying by 2 = designated mesh size. Example: One side of the mesh square reads as 18mm. 18mm x 2 = 36mm mesh (as definied by Avinet Research Supplies). Usually 30 or 38 mm. ""ND"" indicates this information was not recorded."
+net_dim,character,"Dimensions of net area used during mistnetting session (in m). Usually 6 x 2.6, 9 x 2.6, 12 x 2.6, or 18 x 2.6. ""ND"" indicates this information was not recorded."
+spp_audio_lure,character,"Type of vocalization playback (i.e., audio lure) used during mistnetting session. Usually indicated by species alpha code (e.g., ASSP); see ""species"" field in captures data dictionary. In some cases, multiple types of vocalization playback were used in one mistnetting session (indicated by ""Multiple""); see the ""notes"" field for more information. ""ND"" indicates this information was not recorded."
+dB_level,character,"Decibel level of vocalization playback during mistnetting sesion. Usually 100 dB. ""ND"" indicates this information was not recorded."
+speaker_system,character,"Speaker system used to broadcast vocalization playback during mistnetting session (e.g., CD player, JBL charge speaker). ""ND"" indicates this information was not recorded."
+org,character,Organization that led mistnetting effort.
+notes,character,"Information not captured in other fields. Weather observations are sometimes included here, but were not always available/transcribed from raw data. "
+flagged,character,"Indicates if mistnetting session was flagged for review. ""Y"" indicates session is flagged, ""N"" indicates session is not flagged. See ""flagged_notes"" for more information on why mistnetting session was flagged."
+flagged_notes,character,Explanation of why mistnetting session was flagged.

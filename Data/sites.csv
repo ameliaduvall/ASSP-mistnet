@@ -1,0 +1,24 @@
+island_code,island_name,subisland_code,subisland_name,site_code,site_name,lat,long,notes,site_alias
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),AP,Arch Point,33.487622,-119.028535,Lat/lon used by Josh Adams in 2004-2007,NA
+ANI,"Anacapa Island, Channel Islands National Park",EAI,East Anacapa Island,CC,Cathedral Cove,34.014197,-119.371283,1994 and 2011 location,EAI West end of Cathedral Cove; EAI West side of Cathedral Cove (near net #5)
+SCI,"Santa Cruz Island, Channel Islands National Park",DR,Diablo Rock,DR,Diablo Rock,34.058036,-119.766572,NA,NA
+ANI,"Anacapa Island, Channel Islands National Park",EAI,East Anacapa Island,EAI_N,"EAI North side, dock area",34.016411,-119.362333,1994 location,"Landing Cove Overlook (34.016211, -119.360917), EAI North side--just above Landing Cove on lighthouse side of cove"
+ANI,"Anacapa Island, Channel Islands National Park",EAI,East Anacapa Island,EAI_S,EAI South Ridge,34.014217,-119.365644,1994 and 2011 location,EAI South side--near water catchment
+ANI,"Anacapa Island, Channel Islands National Park",EAI,East Anacapa Island,EAI_SW,EAI SW end,34.013008,-119.374161,1994 location,NA
+ANI,"Anacapa Island, Channel Islands National Park",EAI,East Anacapa Island,EAI_W,EAI west of lighthouse,34.016017,-119.359978,1994 location,NA
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),ESP,Elephant Seal Point,33.482528,-119.041599,Lat/lon used by Josh Adams in 2004-2007,NA
+ANI,"Anacapa Island, Channel Islands National Park",WAI,West Anacapa Island,FC,Frenchy's Beach,34.007333,-119.411358,NA,"North side of Frenchy's Cove, east end, upper bench; Frenchy's Cove"
+ANI,"Anacapa Island, Channel Islands National Park",EAI,East Anacapa Island,GC,Garbage Cove,34.016198,-119.365183,NA,NA
+SCI,"Santa Cruz Island, Channel Islands National Park",SR,Scorpion Rock,HT,High Terrace,34.04733,-119.546765,NA,SR High Terrace-East
+SCI,"Santa Cruz Island, Channel Islands National Park",SCI,Santa Cruz Island (main island),LSH,Little Scorpion Headland,34.044894,-119.546629,NA,Scorpion Bluff
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),NCliffs,North Cliffs,33.488461,-119.030192,"Site used in 1990s, 2009, 2011; approximated location of PRBO site from the 90s using report map ",North Peak Cliffs
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),NTP,Nature Trail Plot,33.480059,-119.028972,This location was only used once on 7/19/2014 by 2 staff that are no longer at CIES. This location is an approximate for now.,NA
+SMI,"San Miguel Island, Channel Islands National Park",PI,Prince Island,PI,Prince Island 1,34.056323,-120.332024,NA,"PI1, 1"
+ANI,"Anacapa Island, Channel Islands National Park",MAI,Middle Anacapa Island,RC,Rockfall Cove,34.003147,-119.391792,NA,NA
+ANI,"Anacapa Island, Channel Islands National Park",WAI,West Anacapa Island,RR,Rat Rock,34.013764,-119.442644,1994 and 2011 location,WAI Rat Rock--north side
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),SP,Signal Peak,33.471906,-119.041719,"Site used in 2009, 2011",NA
+SCI,"Santa Cruz Island, Channel Islands National Park",SR,Scorpion Rock,SR,Scorpion Rock,34.047666,-119.547674,NA,"1, SR1, Lower terrace of SE side of SR, SR2 (34.047563, -119.546899), SR3 (34.047752, -119.547622)."
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),SRO,Shag Rock Overlook,33.484214,-119.034674,"Re Jim Howard, this changes from year to year. The lat/long he provided represents equidistant location between the two locations. Looking at the data, this location was netted on 7/07/2014 and 8/22/2014. On 7/07/2014, 2 nets were used and no ASSP were banded. On 8/22/2014, they started at the bench (south of lat/long provided) and then moved to the peninsula to the north of the lat/long provided at ~01:00.",NA
+SBI,"Santa Barbara Island, Channel Islands National Park",Sutil,Sutil Island,Sutil,Sutil Island,33.464653,-119.049628,Approximate location on island,NA
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),WCliffs,West Cliffs,33.477633,-119.042881,"PRBO site from the 90s, approximated location using report map",NA
+SBI,"Santa Barbara Island, Channel Islands National Park",SBI,Santa Barbara Island (main island),WP,Websters Point,33.481075,-119.046301,This location was only used once on 5/17/2016. No captures recorded. Speakers were very quiet and batteries died. Also approximated location of PRBO site from the 90s using report map ,NA
