@@ -1,0 +1,85 @@
+---
+title: "CHIS ASSP Mistnet"
+author: "Amelia DuVall"
+date: "3/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Database Narrative
+
+The Channel Islands National Park (CHIS) Ashy Storm-Petrel (ASSP) Mistnetting Database in its current form is an Excel spreadsheet with the following tabs:
+1.Banding
+* Banding Data Dictionary
+* CPUE
+* CPUE Data Dictionary
+* Participant Initials
+
+The database contains storm-petrel mistnetting data from Anacapa, Santa Barbara Island, Santa Cruz Island (including Scorpion Rock), and Prince Island (San Miguel Island) from 1994 – 2018 (excluding 1997, 1998, 2000 – 2003, 2008, 2013.). Funding was provided by NFWF in 2018 to compile these data as part of an effort to evaluate paired acoustic data with site specific mist-net CPUE. Prior to this project, the CHIS mistnetting data was kept in various places (e.g., USGS, CHIS, Point Blue) in various forms (e.g., reports, field notebooks, spreadsheets, etc). Mistnetting data at the CHIS seabird office from recent years (2009 – 2018) were not digitally archived; banding records were submitted to BBL but there was not a centralized database that recorded relevant metadata (e.g., start time, end time, playback, net size, etc.). Raw data from mistnetting sessions at Santa Barbara Island in 1994, 1995, 1996, and 1999 was stored at the Point Blue offices. Finally, USGS had been digitally archiving mistnetting data as a continuation of the work Josh Adams did at Santa Barbara Island, Scorpion Rock, and Prince Island in 2004 – 2007. After 2006, the USGS team conducted and archived data from mistnetting sessions at Prince Island and CHIS conducted and archived data from mistnetting sessions at Anacapa Island, Santa Cruz Island (including Scorpion Rock), and Prince Island. The database in its current form expands on the version created by Josh Adams to analyze mistnetting data from 2004 – 2007 (Adams 2016). 
+
+Several participants have contributed to mistnetting efforts at CHIS over the years, leading to variation in methods. In compiling these data, we found discrepancies and data gaps (i.e., information not consistently recorded) for the following:
+* Net mesh size (e.g., 30mm, 38mm)
+* Net dimensions (e.g., 9 x 12m, 6 x 12m, etc.)
+* Audio file used for vocalization playback (e.g., LESP, ASSP, BLSP, none)
+* Decibel level of vocalization playback 
+* Speaker system used
+* Level of effort (e.g., start/stop times not recorded)
+* Unbanded individuals (e.g., individuals captured and released without placing bands)
+* Species codes (e.g., LHSP versus LESP for Leach’s Storm Petrels)
+* Recapture definition (same night recapture versus recapture)
+* Site names
+* Brood patch scale
+* “ND” versus “UNK”
+* Capture date 
+
+To address these issues (to the extent possible) and preserve these data, we did the following while compiling these data digitally:
+* Combed available reports for relevant metadata
+* Contacted participants for relevant metadata (e.g., Shaye Wolf, Bill Sydeman, Jen Roth, Sasha Auer)
+* Cross-referenced BBL records with raw data to fill data gaps (e.g., if band numbers not recorded or partially recorded, species name was not listed)
+* Standardized sites names and included lat/long 
+* Changed all Leach’s Storm-Petrels species codes to “LESP” (i.e., changed LHSP to LESP)
+* Tested speaker systems and decibel output (if systems were still available)
+* Compared audio playback files used across sites/years 
+* Standardized brood patch scale
+* Standardized use of “ND” versus “UNK”
+* Created “true date” and “session date” field
+* Added “session ID”
+* Added “series ID” for sequential nights
+* Created data dictionaries for each sheet to define column names and values
+* Scanned raw data to create a digital back-up.
+
+Moving forward, we hope to do the following:
+	Finalize database structure, including:
+	Streamline database structure (e.g., by removing unnecessary columns)
+	Figure out how adequately document variable use of acoustic playback during mistnetting sessions (e.g., species calls used)
+	Finalize and streamline data dictionaries 
+	Determine best file format for archival (e.g., Access database)
+	Determine archival location (e.g., CHIS, USGS)
+	Conduct QA/QC
+	Cross-reference mistnetting sessions listed in CPUE sheet with banding session
+	Cross-reference BBL records with banding records to look for additional data gaps
+	Plot data for outliers (e.g., morphometric data, start/stop times, etc.) 
+	Continue to build database and include data from:
+	Efforts during 1975 – 77 summarized by Hunt et al. (1979)
+	Surveys during 1991 – 99 conducted by H. Carter et al. 
+
+
+
+You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

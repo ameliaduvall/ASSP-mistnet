@@ -1,0 +1,204 @@
+---
+title: "CHIS ASSP Mistnet Data Assessment"
+author: "Amelia DuVall"
+date: "4/3/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is `r paste0("v.", (Sys.Date()))`
+
+This document is a preliminary assessment of Ashy Storm-Petrel (ASSP) mistnetting data (1994-2018) from Channel Islands National Park (CHIS) in preparation for analysis.
+
+### Load packages
+```{r packages, message = FALSE}
+library(openxlsx)
+library(tidyverse)
+library(lubridate)
+```
+
+### Read in data
+Note the version of the database used. This database contains 6 sheets: Banding, Banding_Data_Dictionary, CPUE, CPUE_Data_Dictionary, Mistnetting_Locations, Participant_Initials. 
+```{r data}
+setwd("C:/Users/ameli/Dropbox/UW SAFS/Projects/CHIS/Taxa/ASSP/Mistnetting")
+
+banding_raw <- read.xlsx("CHIS_ASSP_mistnet_database_04292020.xlsx", sheet = "Banding", startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = TRUE, na.strings = c("NA", "ND"), skipEmptyRows = FALSE)
+
+cpue_raw <- read.xlsx("CHIS_ASSP_mistnet_database_04292020.xlsx", sheet = "CPUE", startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, na.strings = c("NA", "ND"), skipEmptyRows = FALSE)
+
+sites <- read.xlsx("CHIS_ASSP_mistnet_database_04292020.xlsx", sheet = "Mistnetting_Locations", startRow = 1, colNames = TRUE, rowNames = FALSE, detectDates = FALSE, na.strings = c("NA", "ND"), skipEmptyRows = FALSE)
+```
+
+### Set-up data
+```{r setupdata}
+#Reformat dates
+banding <- banding_raw %>%
+            mutate(capture_time = convertToDateTime(capture_time, origin = "1900-01-01")) %>%
+            mutate(release_time = convertToDateTime(release_time, origin = "1900-01-01"))
+
+cpue <- cpue_raw %>%
+            mutate(app_sunset = convertToDateTime(app_sunset, origin = "1900-01-01")) %>%
+            mutate(std_ending = convertToDateTime(std_ending, origin = "1900-01-01")) %>%
+            mutate(net_open_1 = convertToDateTime(net_open_1, origin = "1900-01-01")) %>%
+            mutate(net_close_1 = convertToDateTime(net_close_1, origin = "1900-01-01")) %>%
+            mutate(net_open_2 = convertToDateTime(net_open_2, origin = "1900-01-01")) %>%
+            mutate(net_close_2 = convertToDateTime(net_close_2, origin = "1900-01-01")) %>%
+            mutate(net_open_3 = convertToDateTime(net_open_3, origin = "1900-01-01")) %>%
+            mutate(net_open_4 = convertToDateTime(net_open_4, origin = "1900-01-01")) %>%
+            mutate(net_close_4 = convertToDateTime(net_close_4, origin = "1900-01-01")) %>%
+            mutate(net_open_5 = convertToDateTime(net_open_5, origin = "1900-01-01")) %>%
+            mutate(net_close_5 = convertToDateTime(net_close_5, origin = "1900-01-01"))
+
+#Create banding version with only ASSP banded.
+ASSPbanding <- banding %>%
+                filter(species == "ASSP") %>%
+                filter(band_no != "notbanded")
+
+```
+There are `r nrow(banding) - nrow(ASSPbanding)` fewer records when you filter the banding sheet to banded ASSP only. Which records are lost?
+```{r other}
+otherbanding <- banding %>%
+                  filter(species != "ASSP") %>%
+                  group_by(species, island_code) %>%
+                  summarise(n())
+
+print(otherbanding)
+
+unbanded <- banding %>%
+              filter(band_no == "notbanded") %>%
+              group_by(species) %>%
+              summarize(n())
+
+print(unbanded)
+
+```
+
+
+### Capture/recapture rates
+
+How many unique bands were encountered?
+
+```{r bands}
+uniqueASSP <-  group_by(.data = ASSPbanding, band_no) %>% 
+                  summarise(no_captures = n()) %>% 
+                  ungroup()
+
+```
+There are `r nrow(unique(uniqueASSP$band_no))` unique band numbers (e.g., individuals). 
+
+Summarize capture rates.
+
+```{r captures}
+summarycaptures <- group_by(uniqueASSP, no_captures) %>%
+                      summarise(count = n()) %>%
+                      ungroup()
+
+show(summarycaptures)
+  
+```
+Most individuals (`r summarycaptures[1,2]`) were only captured once. Some individuals (`r (summarycaptures[2,2])`) were captured twice (e.g., recaptured once). Very few individuals were captured multiple times: `r summarycaptures[3,2]` individuals were captured three times and `r summarycaptures[4,2]` were captured four times. These results include same night recaptures (e.g., individuals that were captured >1 in one night)
+
+There are only `r sum(summarycaptures[,2]) - summarycaptures[1,2]` recaptures. That's a recapture rate of `r (sum(summarycaptures[,2]) - summarycaptures[1,2])/sum(summarycaptures[,2])`.
+
+How many ASSP individuals were banded?
+
+How many captures at each island? Sub-island? site?
+```{r capturebysite}
+capturebysite <- ASSPbanding %>%
+                  group_by(island_code, subisland_code, site_code) %>% 
+                  summarise(no_captures = n()) %>% 
+                  arrange(desc(no_captures)) %>%
+                  ungroup()
+
+
+```
+
+### Recapture rates
+
+How many individuals were recaptured once?
+Summarize recapture rates.
+```{r recapture}
+recap <- group_by(.data = ASSPbanding, recapture) %>%
+  summarise(no_captures = n()) %>%
+  ungroup()
+
+show(recap)
+```
+
+The recapture rates will not necessarily match the unique band numbers because we might have encountered individuals only as a recapture (i.e., we did not band them). 
+
+How many individuals were recaptured >1 time? What is the capture rate?
+
+duration of time between recaptures
+
+### Sessions
+There are `r nrow(cpue)` mistnetting sessions.
+
+Where did the sessions occur?
+
+```{r sessionsbyloc}
+sessionbysite <- cpue %>%
+              group_by(island_code, subisland_code, site_code) %>%
+              summarise(no_sessions = n()) %>%
+              arrange(desc(no_sessions)) %>%
+              ungroup()
+
+sessionbyisland <- cpue %>%
+              group_by(island_code) %>%
+              summarise(no_sessions = n()) %>%
+              arrange(desc(no_sessions)) %>%
+              ungroup()
+
+```
+
+When did the sessions occur?
+```{r sessionsbyyr}
+sessionbyyr <- cpue %>%
+              group_by(year) %>%
+              summarise(no_sessions = n()) %>%
+              arrange(desc(no_sessions)) %>%
+              ungroup()
+```
+
+
+### Sites
+
+Create map of sites
+
+How many unique sites are there?
+
+How many sessions were at each site?
+
+How are the sites nested?
+
+How many unique islands are there?
+
+How many unique sub-islands there?
+
+What is the distance between sites?
+
+
+### Effort
+
+Effort is defined as duration of time (min) that the net was open and ASSP vocalizations were broadcast.
+
+What is the effort level per site?
+
+What is the effort level per year?
+
+What is the effort level per sub-island? Island?
+
+### Brood patch
+
+Include LESP?
+Compare duration between recaps
+Compare recap rates between sites/islands
+Compare differences in morpoemtric data for recaps
+Look at BBL records
+Add questions about environmental covariates
+Replaced bands
+Unique band no capture rate includes SNRs
+
