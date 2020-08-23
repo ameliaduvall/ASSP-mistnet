@@ -8,8 +8,11 @@ library(anchors)
 library(tidyverse)
 
 # Read-in data from earlier version
-captures <- read.csv(here("Data", "captures.csv"))
-cpue <- read.csv(here("Data", "cpue.csv"))                   
+captures.new <- read.csv(here("Data", "captures.csv"))
+cpue.new <- read.csv(here("Data", "cpue.csv")) 
+
+band <- captures.new %>%
+  filter(band_no == "4501-41795")
 
 ## Captures
 # Compare new session ID with old session ID
