@@ -1,9 +1,10 @@
 ---
 title: "How to Join ERA5 data to a Time Series"
-author: Abram B. Fleishman
+author: Abram B. Fleishman (edits by Amelia DuVall)
 date: "29 June 2020"
 output: html_notebook
 ---
+This is `r paste0("v.", (Sys.Date()))`
 
 This notebook shows you how to prep a time series for attaching `ERA5` data.  
 
@@ -24,6 +25,9 @@ wrangling.  First we will load it and do some time-wrangling for attachment.
 
 # devtools::install_github("hunzikp/velox")
 
+install.packages("remotes")
+remotes::install_github("hafen/rminiconda")
+
 library(easypackages)
 libraries("raster","ncdf4","velox","oce","dplyr","lubridate","tidyr","purrr","here","reticulate")
 
@@ -31,8 +35,7 @@ libraries("raster","ncdf4","velox","oce","dplyr","lubridate","tidyr","purrr","he
 project_tz = "America/Los_Angeles"
 
 # load the data
-dat_raw<-readRDS(here::here("Data", "ASSPwx.csv"))
-## Error in readRDS(here::here("Data", "ASSPwx.csv")) : unknown input format
+dat_raw<-readRDS(here::here("Working", "ASSP_4_wx.RDS"))
 
 #look at the data
 head(dat_raw)
@@ -45,12 +48,16 @@ dat<-dat_raw %>%
                         by = "1 hour") %>%
            unique %>% 
            list) %>%
-  unnest(cols = c(DateTime_h)) %>% 
-  mutate(DateTime_h = DateTime_h %>% #fix the time zones
-           force_tz(project_tz) %>% 
-           with_tz("UTC"),
-         Longitude360=ifelse(long<0,long+360,long),
+  unnest(cols = c(DateTime_h)) %>%
+  mutate(Longitude360=ifelse(long<0,long+360,long),
          Latitude=lat)
+
+# do not need to fix time zones  
+  # mutate(DateTime_h = DateTime_h %>% #fix the time zones
+  #          force_tz(project_tz) %>%
+  #          with_tz("UTC"),
+  #        Longitude360=ifelse(long<0,long+360,long),
+  #        Latitude=lat)
 
 head(dat) %>% as.data.frame()
 
@@ -61,11 +68,18 @@ head(dat) %>% as.data.frame()
 
 To access the Climate Data Store,  you must first register for an account, follow the directions for setting up your computer to access the api ("install" the key), and download the API client (a python package).  Please go to [this page](https://cds.climate.copernicus.eu/api-how-to) for instructions.
 
+C:\Users\Amelia DuVall\AppData\Local\Programs\Python\Python38-32
+
 Once things are set up, we can run `python` in `RStudio` (version 1.2+) using the `reticulate` package.  To do so, must point `RStudio` to the `python` executable with the `use_python()` function.
 
 ```{r}
 
-use_python(python = "C:/Users/ConservationMetrics/AppData/Local/r-miniconda/python.exe")
+# use_python(python = "C:/Users/ConservationMetrics/AppData/Local/r-miniconda/python.exe")
+# use_python(python = "C:/Users/Amelia DuVall/AppData/Local/Programs/Python/Python38-32/python.exe")
+
+rminiconda::install_miniconda(version = 3, name = "my_python")
+py <- rminiconda::find_miniconda_python("my_python")
+reticulate::use_python(py, required = TRUE)
 ```
 
 The we can define `python` chunks just like we would `R` chunks.
@@ -91,13 +105,12 @@ dates_to_download
 Use the values above to populate the info for `python` below.
 
 ```{python, python.reticulate = TRUE,eval=F}
-
 # load the climate data store API library
 import cdsapi
 
 # Define the years and months you want the data for
-years=['1994']
-# years=['1994','2004','2005','2006','2009','2011','2014','2015','2016','2017','2018']
+# years=['1994']
+years=['1994','2015','2004','2005','2006','2009','2011','2014','2015','2016','2017','2018']
 months=[4,5,6,7,8,9]
 
 # define the bounding box for the area you are interested in downloading.
@@ -158,8 +171,6 @@ Now that you have downloaded the weather data as rasters lets look at a few.
 ### Load weather data
 
 ```{r}
-
-
 # ERA5 functions
 
 #' Read NC names
@@ -185,7 +196,7 @@ read_vx_date<-function(dat,spdf,datex){
 files<-list.files(here::here('ERA5'),pattern = "\\.nc$",full.names = T,recursive = T)
 files<-as.character(files)
 
-# opena connection to one of the files
+# open a connection to one of the files
 nc<-files[1] %>% ncdf4::nc_open() 
 
 # you can see  info about this file by printing it, but there is too much info

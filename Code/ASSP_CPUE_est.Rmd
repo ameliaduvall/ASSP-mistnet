@@ -1,0 +1,219 @@
+---
+title: "Ashy Storm-Petrel Catch-Per-Unit-Effort Estimation for Channel Islands National Park"
+author: "Amelia J. DuVall"
+date: "8/27/2020"
+output: pdf_document
+---
+
+This document builds on the metadata file ("sessions.csv") that documents mistnetting efforts for Ashy Storm-Petrels for the Channel Islands National Park (CHIS) Seabird Monitoring Program Database.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(easypackages)
+libraries("here", "tidyverse", "readxl", "lubridate", "data.table",
+          "tidyr", "mosaic", "oce", "foreach", "doParallell", "suncalc")
+```
+
+This is `r paste0("v.", (Sys.Date()))`
+
+## Read-in data
+```{r readin}
+sessions.raw <- read.csv(here("Working", "sessions.csv"), na.strings = c("ND", "NA"))
+captures.raw <- read.csv(here("Working", "captures.csv"), na.string = c("ND", "NA"))
+
+# Fix day/times
+captures <- captures.raw %>%
+  mutate(session_date = as_date(session_date, format = "%m/%d/%Y")) %>%
+  mutate(capture_date = as_datetime(capture_date, format = "%m/%d/%Y %H:%M")) %>%
+  mutate(release_date = as_datetime(release_date, format = "%m/%d/%Y %H:%M")) %>%
+  dplyr::select(-1)
+
+sessions <- sessions.raw %>%
+  mutate(session_date = as_date(session_date, format = "%Y-%m-%d")) %>%
+  mutate_at((c("net_open_1", "net_open_2", "net_open_3", "net_open_4", "net_open_5",
+               "net_close_1", "net_close_2", "net_close_3", "net_close_4", "net_close_5")), 
+            ~ as_datetime(.x, format = "%m/%d/%Y %H:%M", tz = "America/Los_Angeles")) %>%
+  select(-1)
+```
+
+## Add new fields
+```{r fields}
+cpue <- sessions %>%
+  mutate
+
+```
+
+## Apparent sunset
+```{r app_sunset}
+# create dataframe to run sunset function on
+sun_vec <- sessions %>%  
+  transmute(session_date = session_date, lat = Lat, lon = Long, Site = Site, sessionID = sessionID) %>% 
+  # remove the few rows with unknown locations
+  drop_na() %>%  
+  filter(TRUE) 
+
+# get apparent sunset times, calculate standard ending based on sunset and join back with CPUE database
+metadata_sunsetTime <- getSunlightTimes(data = sun_vec,
+                                    keep = c("sunset"), tz = "PST8PDT") %>% 
+  mutate(std_ending = sunset + lubridate::hours(5) + lubridate::minutes(18), # standard ending = 5.3 hours after sunset
+         Lat = lat,
+         Long = lon,
+         App_sunset = sunset) %>%
+  left_join(sun_vec, by = c("date", "lat", "lon")) %>%
+  select(-date, -lat, -lon, -sunset) %>%
+  left_join(metadata, by = c("sessionID", "Site", "Lat", "Long")) %>% 
+  # calculate total number of minutes net was open, as well as total number of minutes before standard ending
+  mutate(Site = as.factor(Site),
+         Island = as.factor(Island),
+         min_1 = net_close_1 - net_open_1,
+         min_2 = net_close_2 - net_open_2,
+         min_3 = net_close_3 - net_open_3,
+         min_4 = net_close_4 - net_open_4,
+         min_5 = net_close_5 - net_open_5) %>% 
+  mutate_at(c("min_1", "min_2", "min_3", "min_4", "min_5"), .funs = ~replace_na(., 0)) %>%
+  mutate(net_close_1_std = if_else(net_close_1 > std_ending, std_ending, net_close_1),
+         net_close_2_std = if_else(net_close_2 > std_ending, std_ending, net_close_2),
+         net_close_3_std = if_else(net_close_3 > std_ending, std_ending, net_close_3),
+         net_close_4_std = if_else(net_close_4 > std_ending, std_ending, net_close_4),
+         net_close_5_std = if_else(net_close_5 > std_ending, std_ending, net_close_5),
+         min_1_std = net_close_1_std - net_open_1,
+         min_2_std = net_close_2_std - net_open_2,
+         min_3_std = net_close_3_std - net_open_3,
+         min_4_std = net_close_4_std - net_open_4,
+         min_5_std = net_close_5_std - net_open_5) %>% 
+  mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace(., .<0, 0)) %>%
+  mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace_na(., 0)) %>%
+  mutate(min = as.numeric(min_1 + min_2 + min_3 + min_4 + min_5),
+         min_std = min_1_std + min_2_std + min_3_std + min_4_std + min_5_std,
+         min = as.double(if_else(min < 0, "0", as.character(min))),
+         min = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min))),
+         min_std = as.double(if_else(min_std <0, "0", as.character(min_std))),
+         min_std = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min_std)))) %>%
+  select(-min_1:-min_5_std) %>%
+  filter(TRUE) 
+
+
+# metadata_times_edit <- metadata_sunsetTime %>% 
+#   mutate(min_std = if_else(min == 900, 173.0833, min_std),
+#          min_std = if_else(min == 955, 114.25, min_std),
+#          min_std = if_else(min == 1022, 269.25, min_std))
+# test <- metadata_sunsetTime %>% filter(min > 550)
+
+# write.csv(metadata_sunsetTime, file = '~/WERC-SC/ASSP_share/ASSP_3_CPUE_metadata_Sun_noMoon.csv',
+          row.names = FALSE)
+
+min_test <- metadata_sunsetTime %>%
+  select(App_sunset, min_std, min, net_open_1, net_close_1, std_ending, net_open_2:net_open_5, net_close_2:net_close_5) %>%
+  filter(min_std > 300)
+
+```  
+
+## Moon
+```{r moon}
+## CALCULATE MOON TIME
+
+moonDF <- data.frame(date = seq(ymd("1994-1-1"), ymd("2019-1-1"), by = "days"), 
+                     lat = c(33.83128028, rep(NA, 9131)),
+                     lon = c(-119.34492248, rep(NA, 9131)), stringsAsFactors=FALSE) %>% 
+          fill(lat, lon) %>% 
+          filter(TRUE)
+
+# NOW PULL OUT RELEVANT DATES, THEN GET MOON ILLUMINATION DURING THOSE NIGHTS
+moonT <- getMoonTimes(data = moonDF, 
+                      keep = c("rise", "set"), tz = "PST8PDT") %>% 
+          
+          filter(TRUE)
+
+as.data.table(moonT)
+setkey(moonT, rise)
+test = moonT[moonDF, roll = "nearest"]
+
+# create dataframe to run moonCalc function on 
+moonT_metadata <- metadata %>%  
+  select(sessionID, net_open_1, std_ending) %>% 
+  left_join(moonDF, by = c("net_open_1" = "rise"))
+  
+# moon_vec = metadata %>% 
+#   transmute(startDay = net_open_1, #date = as.Date(date, format = "%m/%d/%Y"), # + lubridate::days(1), # mdy(date), # dummy_date = 
+#             endDay = startDay + lubridate::days(1),
+#             Lat, Long, 
+#             # Site = Site, lat = Lat, lon = Long, 
+#             sessionID = sessionID) %>% 
+#             # startDay = as.POSIXct(date, format="%m/%d/%Y"), #  %h:%m:%s
+#             # endDay = startDay + lubridate::days(1)) %>% 
+#   # remove the few rows with unknown locations
+#   drop_na() %>%  
+#   filter(TRUE) 
+
+moonT <- getMoonTimes(data = moon_vec,
+                          keep = c("rise", "set"), tz = "PST8PDT") %>% 
+  mutate(date = date - lubridate::days(1)) %>%
+  left_join(moon_vec, by = c("date", "lat", "lon")) %>%
+  # select(-lat, -lon,) %>%
+  filter(TRUE) 
+
+moonT_next <- getMoonTimes(data = moon_vec_next,
+                          keep = c("rise", "set"), tz = "PST8PDT") %>% 
+  mutate(Lat = lat, # nextDay = date,
+         Long = lon,
+         moonRise_next = rise,
+         moonSet_next = set,
+         date = date - lubridate::days(2)) %>%
+  select(-rise, -set) %>% 
+  left_join(moon_test, by = c("date", "Lat", "Long")) %>%
+  select(-date, -lat, -lon) %>%
+  mutate(moonRise = if_else(rise == "NA", moonRise_next, rise),
+         moonSet = if_else(set == "NA", moonSet_next, set)) %>% 
+  filter(TRUE) 
+
+```
+
+## Combine
+```{r combine}
+### MERGE METADATA WITH SUNSET AND MOONINDEX
+## combine moonIndex and sunset
+moonIndex_sunset <- moonIndex %>%  
+  left_join(sunsetTime, by = c("nightID", "Lat", "Long")) %>% # c("startDates", "Lat", "Long", "Site")
+  mutate(Date = date(startDay)) %>% 
+  select(nightID, App_sunset, moonFrac, moonMin, moonIndex, Date, Site, std_ending, Lat, Long) %>% 
+  filter(TRUE) 
+## add combined sun moon dataset to metadata  
+metadata_SunMoon_all <- metadata %>% 
+  left_join(moonIndex_sunset, by = c("nightID", "Site", "Lat", "Long")) %>% 
+  # sum up net time for all net open/close intervals
+  mutate(min_std_raw = as.character(difftime(std_ending, net_open, units="mins")), 
+         min_raw = as.character(difftime(net_close, net_open, units="mins")), 
+         min_std = if_else(std_ending <= net_open, "0", 
+                               if_else(std_ending <= net_close, min_std_raw, min_raw)),
+         min_raw = as.numeric(min_raw),
+         min_std = as.numeric(min_std)) %>% 
+  select(-min_std_raw)
+
+## select only new metadata and summarise by each nightID (combining multiple open/close efforts per night)
+metadata_SunMoon <- metadata_SunMoon_all %>% 
+  group_by(nightID) %>% 
+  summarise(Site = first(Site), island = first(island), Date = first(Date), Lat = first(Lat), Long = first(Long), 
+            App_sunset = first(App_sunset), moonFrac = first(moonFrac), moonMin = first(moonMin), moonIndex = first(moonIndex),
+            net_open = first(net_open), net_close = last(net_close), std_ending = first(std_ending), 
+            minutes_raw = sum(min_raw), minutes_std = sum(min_std),
+            Net_mesh = first(Net_mesh), Net_dim = first(Net_dim), Audio_file = first(Audio_file), dB_level = first(dB_level), 
+            Speaker_system = first(Speaker_system), Data_repository = first(Data_repository), notes = first(notes))
+
+# confirm that metadata_SunMoon is the same length as unique nightID 
+metadata_unique <- metadata_SunMoon %>% 
+  distinct(nightID) %>% 
+  mutate(seq = 1:n()) %>% 
+  filter(TRUE)
+
+
+#### SAVE NEW METADATA (one entry per night, with summed time) AND ALL METADATA
+write.csv(metadata_SunMoon, file = '~/WERC-SC/ASSP_share/ASSP_CPUE_1_metadata_SunMoon_new.csv',
+          row.names = FALSE)  
+write.csv(metadata_SunMoon_all, file = '~/WERC-SC/ASSP_share/ASSP_CPUE_1_metadata_SunMoon_all.csv',
+          row.names = FALSE)
+
+
+
+
+```
