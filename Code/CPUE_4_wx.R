@@ -14,10 +14,10 @@ CPUE.raw <- read.csv(here("Working", "cpue.csv"), na.strings = c("ND", "NA"))
 
 ## fix dates
 CPUE <- CPUE.raw %>%
-  mutate(session_date = as_date(session_date, format = "%m/%d/%Y")) %>%
+  mutate(session_date = as_date(session_date, format = "%Y-%m-%d")) %>%
   mutate_at((c("net_open_1", "net_open_2", "net_open_3", "net_open_4", "net_open_5",
                "net_close_1", "net_close_2", "net_close_3", "net_close_4", "net_close_5")), 
-            ~ as_datetime(.x, format = "%m/%d/%Y %H:%M"))
+            ~ as_datetime(.x, format = "%m/%d/%Y %H:%M", tz = "America/Los_Angeles"))
 
 summary <- CPUE %>%
   group_by(site_code) %>%
