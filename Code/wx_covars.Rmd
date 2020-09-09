@@ -1,17 +1,14 @@
 ---
-title: "How to Join ERA5 data to a Time Series"
-author: Abram B. Fleishman (edits by Amelia DuVall)
+title: "CHIS ASSP Weather Covariate Data"
+author: Amelia DuVall
 date: "29 June 2020"
 output: html_notebook
 ---
 This is `r paste0("v.", (Sys.Date()))`
 
-This notebook shows you how to prep a time series for attaching `ERA5` data.  
+This notebook documents pulling `ERA5` data for weather covariates for the Ashy Storm-Petrel catch-per-unit-effort analysis at Channel Islands National Park. 
 
 ### Load your data
-
-To be able to download the correct `ERA5` data files, we need to do some data
-wrangling.  First we will load it and do some time-wrangling for attachment.
 
 ```{r message = FALSE}
 
@@ -23,21 +20,17 @@ wrangling.  First we will load it and do some time-wrangling for attachment.
 # ideas for working around it if you have issues, but for now, installing from
 # github is the best option
 
-## using new version of R!
-
 # devtools::install_github("hunzikp/velox")
 
 library(easypackages)
 libraries("raster","ncdf4","velox","oce","dplyr","lubridate","tidyr","purrr","here","reticulate")
 
-## tried downloading miniconda (see AF drive under use_python())
+## I used miniconda to get python to work. 
 # install.packages("remotes")
 # remotes::install_github("hafen/rminiconda")
 
-
 # set the local time zone
 project_tz = "America/Los_Angeles"
-## set local time zone on script to make "ASSP_4_wx.RDS"
 
 # load the data
 dat_raw<-readRDS(here::here("Working", "ASSP_4_wx.RDS"))
@@ -72,48 +65,16 @@ head(dat) %>% as.data.frame()
 
 To access the Climate Data Store,  you must first register for an account, follow the directions for setting up your computer to access the api ("install" the key), and download the API client (a python package).  Please go to [this page](https://cds.climate.copernicus.eu/api-how-to) for instructions.
 
-
-Notes on installation:
-Downloaded Python to-
-C:\Users\Amelia DuVall\AppData\Local\Programs\Python\Python38-32
-
-Question on step 3
-  Add the installation and Script folder path in PATH using set (temporary) or setx (permanent) in a Command Prompt window.
-
-To temporarily set environment variables, open Command Prompt and use the set command:
-
-  C:\>set PATH=C:\Program Files\Python 3.8;%PATH%
-  C:\>set PYTHONPATH=%PYTHONPATH%;C:\My_python_lib
-  C:\>python
-
-Install the CDS API key
-  url: https://cds.climate.copernicus.eu/api/v2
-  key: 57672:dc156f95-1541-468a-b47c-19c8e58c62e1
-
-Saved as ".cdsapirc" under C:\Users\Amelia DuVall
-
-Syntax error in command prompt
-  pip install cdsapi # for Python 2.7
-  pip3 install cdsapi # for Python 3
-
-Tried downloading miniconda (see AF computer drive)
-  C:\Users\Amelia DuVall\AppData\Roaming\rminiconda\my_python
-
 Once things are set up, we can run `python` in `RStudio` (version 1.2+) using the `reticulate` package.  To do so, must point `RStudio` to the `python` executable with the `use_python()` function.
 
 ```{r}
 # use_python(python = "C:/Users/ConservationMetrics/AppData/Local/r-miniconda/python.exe")
 # use_python(python = "C:/Users/Amelia DuVall/AppData/Local/Programs/Python/Python38-32/python.exe")
 
-## This worked (I think)
+## I opted to use rminiconda instead. 
 # rminiconda::install_miniconda(version = 3, name = "my_python")
 py <- rminiconda::find_miniconda_python("my_python")
 reticulate::use_python(py, required = TRUE)
-```
-
-The we can define `python` chunks just like we would `R` chunks.
-```{python, python.reticulate = TRUE}
-pip install cdsapi
 ```
 
 ```{r}
@@ -131,7 +92,6 @@ dates_to_download<-dat %>%
   as.data.frame()
 
 dates_to_download
-
 ```
 
 Use the values above to populate the info for `python` below.
@@ -139,13 +99,11 @@ Use the values above to populate the info for `python` below.
 ```{python, python.reticulate = TRUE}
 # load the climate data store API library
 import cdsapi
-# import is python version of library
 
 # Define the years and months you want the data for
-years=['1994']
-# years=['1994','2015','2004','2005','2006','2009','2011','2014','2015','2016','2017','2018']
-# months=[4,5,6,7,8,9]
-months = [2]
+# years = ['1994', '1995', '2004', '2005', '2006', '2007', '2009', '2011', '2014', '2015', '2016', '2017', '2018']
+years = ['1995', '2007','2017', '2018']
+months = [4, 5, 6, 7, 8, 9]
 
 # define the bounding box for the area you are interested in downloading.
 lats = [32, 35]
@@ -196,7 +154,6 @@ for jj in years:
 				]
 			},
 			'C:/Users/Amelia DuVall/wx/era5_'+jj+'_N'+'{:02d}'.format(lats[1])+'_W'+'{:03d}'.format(lons[0])+'_S'+'{:02d}'.format(lats[0])+'_E'+'{:03d}'.format(lons[1])+'.nc')
-			## + works as paste
 ```
 
 ### Extracting and attaching WX to your Data
@@ -233,7 +190,6 @@ files<-as.character(files)
 
 # open a connection to one of the files
 nc<-files[1] %>% ncdf4::nc_open() 
-##  ERROR here
 
 # you can see  info about this file by printing it, but there is too much info
 # to see what we are looking for.
@@ -430,8 +386,6 @@ dat_out<-dat %>% group_by(session_ID,
                           site_code,
                           lat,
                           long,
-                          month,
-                          day,
                           start,
                           end) %>% 
   mutate(tot_precip=ifelse(tot_precip<0,0,tot_precip),

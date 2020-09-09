@@ -26,31 +26,29 @@ library(readxl)
 library(here)
 
 ### READ IN DATA
-metadata <- read.csv('~/WERC-SC/ASSP_share/ASSP_6_CPUE_broodpatch_20200709.csv') %>% 
-  mutate_at(c("app_sunset", "std_ending", "net_open_1", "net_close_1", "net_open_2", "net_close_2", "net_open_3",
-              "net_close_3", "net_open_4", "net_close_4", "net_open_5", "net_close_5"),
-            .funs = ~as.POSIXct(., format="%Y-%m-%d %H:%M:%S")) %>% 
-  mutate(CPUEbrd_test = CPUEstd*BPfreq_Y,
-         CPUE_ratio = CPUEstd/CPUEraw, 
-         month = as.character(month),
-         year = as.character(year)) %>%
-  filter(TRUE)
+banding <- readRDS(here("Working", "captures.RDS"))
+metadata <- readRDS(here("Working", "cpue.RDS"))
 
-## Banding sheet pulled from 7/20/2020 ASSP database
-banding <- read.csv(here("Data", "banding.csv"), na.strings = c("NA", "ND"))
-
-## CPUE sheet pulled from 7/20/2020 ASSP database
-cpue <- read.csv(here("Data", "CPUE.csv"), na.strings = c("NA", "ND"))
+# metadata <- read.csv('~/WERC-SC/ASSP_share/ASSP_6_CPUE_broodpatch_20200709.csv') %>% 
+#   mutate_at(c("app_sunset", "std_ending", "net_open_1", "net_close_1", "net_open_2", "net_close_2", "net_open_3",
+#               "net_close_3", "net_open_4", "net_close_4", "net_open_5", "net_close_5"),
+#             .funs = ~as.POSIXct(., format="%Y-%m-%d %H:%M:%S")) %>% 
+#   mutate(CPUEbrd_test = CPUEstd*BPfreq_Y,
+#          CPUE_ratio = CPUEstd/CPUEraw, 
+#          month = as.character(month),
+#          year = as.character(year)) %>%
+#   filter(TRUE)
 
 ## Filter data to ASSP species and banded individuals only.
 ASSP <- group_by(.data = banding) %>%
   filter(species == "ASSP") %>%
-  filter(band_no != "notbanded") %>%
+  #filter(band_no != "notbanded") %>%
   ungroup()
 ```
 
 # summary statistics
-```{r}
+## CPUE
+```{r cpue}
 # CPUEraw
 summary(metadata$CPUEraw)
 # CPUEstd
@@ -60,6 +58,23 @@ summary(metadata$BPfreq_Y)
 summary(metadata$CPUEbrd)
 summary(metadata$CPUEbrd_test)
 summary(metadata$CPUEbrd_std)
+
+sites <- metadata %>%
+  group_by(island_code, site_name) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n))
+
+months <- metadata %>%
+  group_by(session_month) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n))
+```
+## Captures
+```{r captures}
+species <- banding %>%
+  group_by(species) %>%
+  summarize(n=n()) %>%
+  arrange(desc(n))
 ```
 
 #### CPUE graphs
@@ -67,7 +82,7 @@ summary(metadata$CPUEbrd_std)
 
 ### MONTH
 ```{r}
-month <- ggplot(metadata, aes(month, CPUEstd)) +
+month <- ggplot(metadata, aes(as.character(session_month), CPUEstd)) +
   geom_boxplot() +
   stat_n_text(y.pos = 0.3) +
   xlab("Month") + ylab("Standardized CPUE") +
@@ -76,7 +91,7 @@ month
 ```
 This graph show how catch rates varied across months 
 ```{r}
-month_isl <- ggplot(metadata, aes(month, CPUEstd)) +
+month_isl <- ggplot(metadata, aes(as.character(session_month), CPUEstd)) +
   geom_boxplot() +
   facet_wrap(.~subisland_code) +
   xlab("Month") + ylab("Standardized CPUE") +
@@ -90,7 +105,7 @@ NOTE: this graph is broken out by sub-island which is intermediate between "isla
 ## MONTH AND ASSUMED BREEDERS
 ```{r}
 metadata_brd <- metadata %>% 
-  select(CPUEstd, CPUEbrd_std, month)
+  dplyr::select(CPUEstd, CPUEbrd_std, session_month)
 
 metadata_brd <- gather(metadata_brd, "CPUEtype", "CPUE", CPUEstd:CPUEbrd_std)
   
@@ -106,7 +121,7 @@ NOTE: the samples sizes at the top are the sum of CPUEbrd_std and CPUEstd
 
 ### YEAR
 ```{r}
-year <- ggplot(metadata, aes(year, CPUEstd)) +
+year <- ggplot(metadata, aes(as.character(session_year), CPUEstd)) +
   geom_boxplot() +
   xlab("Year") + ylab("Standardized CPUE") +
   stat_n_text(size = 3) +
@@ -114,8 +129,9 @@ year <- ggplot(metadata, aes(year, CPUEstd)) +
 year
 ```
 This graph show how catch rates varied across years for all sites combined
+
 ```{r}
-year_isl <- ggplot(metadata, aes(year, CPUEstd)) +
+year_isl <- ggplot(metadata, aes(as.character(session_year), CPUEstd)) +
   geom_boxplot() +
   facet_wrap(.~subisland_code) +
   xlab("Year") + ylab("Standardized CPUE") +
@@ -328,6 +344,7 @@ wing <- ggplot(data = ASSP, aes(x = island_code, y = wing)) +
   theme_bw()
 wing
 ```
+
 ### Wing Chord  
 ```{r wing}
 summary(ASSP$wing)
@@ -345,7 +362,7 @@ wing.isl <- ggplot(ASSP, aes(x = island_code, y = wing)) +
 wing.isl
 
 # by organization and island
-ASSPorg <- inner_join(ASSP, cpue, by = "session_ID")
+ASSPorg <- inner_join(ASSP, metadata, by = "session_ID")
 
 wing.org <- ggplot(ASSPorg, aes(x = org, y = wing)) +
   geom_boxplot() +
@@ -357,12 +374,12 @@ wing.org
 
 ## RECAPTURES
 ```{r recap}
-recap <- group_by(.data = ASSP, year, recapture, island_code) %>%
+recap <- group_by(.data = ASSP, session_year, recapture, island_code) %>%
   summarise(no_captures = n()) %>%
   ungroup()
 
 ggplot(recap) +
-  geom_col(aes(x = as.factor(year), y = no_captures, fill = recapture), width = 0.8) +
+  geom_col(aes(x = as.factor(session_year), y = no_captures, fill = recapture), width = 0.8) +
   ylab("Number of Captures") + xlab ("Year") +
   theme_bw()
 
