@@ -32,7 +32,7 @@ library(gridExtra)
 banding <- readRDS(here("Working", "captures.RDS"))
 metadata <- readRDS(here("Working", "cpue.RDS"))
 
-## Filter data to ASSP species and remove SNRs
+## Filter data to ASSP species and remove SNRs and unbanded individuals 
 ASSP <- banding %>% 
   filter(species == "ASSP" & recapture != "SNR" & band_no != "notbanded") # 3799 observations
 
@@ -228,14 +228,6 @@ This graph shows now catches varied across islands in 2016 - 2018, the years in 
 #   stat_n_text(size = 4, y.pos = 0.3) +
 #   theme_bw()
 # island_brd # %+% subset(metadata, subisland_code %in% c("DR", "EAI", "PI", "SBI", "SR", "Sutil"))
-
-month_BP <- ggplot(metadata, aes(as.character(session_month), BPfreq_Y)) +
-  geom_boxplot() +
-  stat_n_text(y.pos = 0.3) +
-  xlab("Month") + ylab("Assumed Breeder Frequency") +
-  theme_bw()
-month_BP
-## need to fix text position
 ```
 This graph shows the average CPUE at on each island and also the average CPUE of assumed breeders (based on broodpatch score)
 NOTE: the samples sizes at the top are the sum of CPUEbrd_std and CPUEstd
@@ -330,23 +322,6 @@ p1 <- ggplot(data = ASSP, aes(x = mass_corr), na.rm = TRUE) +
   geom_text(aes(x = mean(mass_corr, na.rm = TRUE) + 10, label= paste0("mean =\n", round(mean(mass_corr, na.rm = TRUE), 2)), y=0.1)) +
   theme_cowplot(12)
 
-# p1a <- ggplot(ASSP) + geom_density(aes(x = mass_corr, fill = island_code), alpha = 0.2) +
-#   xlab("Culmen") +
-#   theme_cowplot(12)
-# p1a
-# 
-# p1b <- ggplot(ASSP) + geom_density(aes(x = mass_corr)) + facet_wrap(~island_code) +  
-#   geom_vline(aes(xintercept = mean(mass_corr, na.rm = TRUE)),
-#              colour = "red", linetype ="longdash", size = .8) +
-#   theme_cowplot(12)
-# p1b
-
-# culmen <- ggplot(data = ASSP, aes(x = island_code, y = culmen)) +
-#   geom_boxplot() +
-#   xlab("Island") + ylab("Culmen")+
-#   theme_bw()
-# culmen
-
 p2 <- ggplot(data = ASSP, aes(x = culmen), na.rm = TRUE) +
   geom_histogram(aes(y = ..density..), binwidth = 0.5, color = "white") +
   geom_density(alpha = 0.5, fill = "cadetblue") +
@@ -354,12 +329,6 @@ p2 <- ggplot(data = ASSP, aes(x = culmen), na.rm = TRUE) +
              colour = "black", linetype ="longdash", size = .8) +
   xlab("Culmen") +
   theme_cowplot(12)
-
-# skulllength <- ggplot(data = ASSP, aes(x = island_code, y = skull_length)) +
-#   geom_boxplot() +
-#   xlab("Island") + ylab("Skull Length") +
-#   theme_bw()
-# skulllength
 
 p3 <- ggplot(data = ASSP, aes(x = skull_length), na.rm = TRUE) +
   geom_histogram(aes(y = ..density..), binwidth = 0.5, color = "white") +
@@ -369,12 +338,6 @@ p3 <- ggplot(data = ASSP, aes(x = skull_length), na.rm = TRUE) +
   xlab("Skull Length") +
   theme_cowplot(12)
 
-# tarsus <- ggplot(data = ASSP, aes(x = island_code, y = tarsus)) +
-#   geom_boxplot() +
-#   xlab("Island") + ylab("Tarsus") +
-#   theme_bw()
-# tarsus
-
 p4 <- ggplot(data = ASSP, aes(x = tarsus), na.rm = TRUE) +
   geom_histogram(aes(y = ..density..), binwidth = 0.5, color = "white") +
   geom_density(alpha = 0.5, fill = "cadetblue") +
@@ -382,12 +345,6 @@ p4 <- ggplot(data = ASSP, aes(x = tarsus), na.rm = TRUE) +
              colour = "black", linetype ="longdash", size = .8) +
   xlab("Tarsus") +
   theme_cowplot(12)
-
-# wing <- ggplot(data = ASSP, aes(x = island_code, y = wing)) +
-#   geom_boxplot() +
-#   xlab("Island") + ylab("Wing Chord") +
-#   theme_bw()
-# wing
 
 p5 <- ggplot(data = ASSP, aes(x = wing), na.rm = TRUE) +
   geom_histogram(aes(y = ..density..), binwidth = 1, color = "white") +
@@ -494,41 +451,71 @@ morph_stats <- ASSP %>%
                       names_to = c("part", "measure"), # break them into these columns
                       names_sep = "_") #  use the underscore to separate 
 
-
 ```
 
 ## RECAPTURES
 ```{r recap}
-recap <- group_by(.data = ASSP, session_year, island_code) %>%
+recap <- group_by(.data = ASSP, session_year, session_month, island_code) %>%
   summarise(no_captures = n(),
             recaps = sum(recapture == "Y"),
             ratio = recaps/no_captures)
 
-# recapture rate over time
-ggplot(recap, aes(x = as.character(session_year), y = ratio)) +
-  geom_boxplot() +
-  xlab("Year") + ylab("Recapture Rate") +
-  theme_bw()
+# # recapture rate over time
+# ggplot(recap, aes(x = as.character(session_year), y = ratio)) +
+#   geom_boxplot() +
+#   xlab("Year") + ylab("Recapture Rate") +
+#   theme_bw()
+# 
+# ggplot(recap, aes(x = as.character(session_year), y = ratio, fill = island_code)) +
+#   geom_col() +
+#   xlab("Year") + ylab("Recapture Rate") +
+#   scale_fill_manual(values = cal_palette("sierra2")) +
+#   geom_hline(aes(yintercept = sum(recaps)/sum(no_captures)),
+#              colour = "black", linetype ="longdash", size = .65) +
+#   theme_bw()
+# 
+# ggplot(recap, aes(x = as.character(session_year), y = ratio)) +
+#   geom_boxplot() +
+#   theme_cowplot(12)
 
-ggplot(recap, aes(x = as.character(session_year), y = ratio, fill = island_code)) +
-  geom_col() +
-  xlab("Year") + ylab("Recapture Rate") +
-  scale_fill_manual(values = cal_palette("sierra2")) +
-  geom_hline(aes(yintercept = sum(recaps)/sum(no_captures)),
-             colour = "black", linetype ="longdash", size = .65) +
-  theme_bw()
+# recap by month
+r1 <- ggplot(recap, aes(x = as.character(session_month), y = ratio)) +
+  geom_boxplot(na.rm = TRUE) +
+  ylab("Recapture Rate") +
+  xlab("Month")  +
+  theme_cowplot(12) +
+  stat_n_text()
 
-ggplot(recap, aes(x = as.character(session_year), y = ratio)) +
-  geom_boxplot() +
-  theme_cowplot(12)
+# recap by island
+r2 <- ggplot(recap, aes(x = island_code, y = ratio)) +
+  geom_boxplot(na.rm = TRUE) +
+  ylab("Recapture Rate") +
+  xlab("Island")  +
+  theme_cowplot(12) +
+  stat_n_text()
+
+# recap by year
+r3 <- ggplot(recap, aes(x = as.character(session_year), y = ratio)) +
+  geom_boxplot(na.rm = TRUE) +
+  ylab("Recapture Rate") +
+  xlab("Year")  +
+  theme_cowplot(12) +
+  theme(axis.text.x = element_text(angle = 30)) +
+  stat_n_text() +
+  geom_hline(aes(yintercept = mean(ratio, na.rm = TRUE)),
+             colour = "black", linetype ="longdash", size = .5) 
+
+# plot in grid
+# breeders <- plot_grid(b1, b2, b3)
+r <- grid.arrange(arrangeGrob(r1,r2, ncol=2, nrow=1),r3)
+ggsave("recaps.jpg", r, width = 9, height = 5)
+
 ```
 
 ## BROOD PATCH
 ```{r broodpatch}
 summary(ASSP$BP)
 unique(ASSP$BP) 
-BPfreq_Y_sum <- metadata$BPfreq_Y
-
 summary(metadata$BPfreq_Y, na.rm = TRUE)
 sd(metadata$BPfreq_Y, na.rm = TRUE)
 
@@ -567,7 +554,4 @@ b3 <- ggplot(metadata, aes(x = as.character(session_year), y = BPfreq_Y)) +
 # breeders <- plot_grid(b1, b2, b3)
 bp <- grid.arrange(arrangeGrob(b1,b2, ncol=2, nrow=1),b3)
 ggsave("breeders.jpg", bp, width = 9, height = 5)
-
-
-
 ```
