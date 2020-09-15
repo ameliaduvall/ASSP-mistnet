@@ -16,7 +16,7 @@ This notebook documents pulling `ERA5` data for weather covariates for the Ashy 
 # install.packages(c("raster","ncdf4","oce","dplyr", "lubridate","tidyr","purrr","here","reticulate"))
 
 # A key package for this workflow is `velox` (for fast raster extraction).  It is
-# no longer maintained and may notwork with new versions of R.  We can discus
+# no longer maintained and may not work with new versions of R.  We can discus
 # ideas for working around it if you have issues, but for now, installing from
 # github is the best option
 
@@ -33,13 +33,18 @@ libraries("raster","ncdf4","velox","oce","dplyr","lubridate","tidyr","purrr","he
 project_tz = "America/Los_Angeles"
 
 # load the data
-dat_raw<-readRDS(here::here("Working", "ASSP_4_wx.RDS"))
+dat_raw<-readRDS(here::here("Working", "ASSP_4_wx_v2.RDS"))
 
 #look at the data
 head(dat_raw)
 
+# NA start time
+NAstart <- dat_raw %>%
+  filter(is.na(start)) ## 22 sessions w/o start time
+
 # create a DF with one row per hour of effort 
 dat<-dat_raw %>% 
+  filter(!is.na(start)) %>%
   rowwise %>% 
   mutate(DateTime_h=seq(from = floor_date(start,unit = "hour"),
                         to = ceiling_date(end,"hour"),
@@ -433,7 +438,7 @@ hist(dat_out$Illu,breaks=30)
 hist(dat_out$MoonAltitude,breaks=30)
 hist(dat_out$Moonup,breaks=30)
 
-saveRDS(dat_out,here::here("Data","mistnet_w_weather.rds"))
-write.csv(dat_out,here::here("Data","mistnet_w_weather.csv"),row.names=F)
+# saveRDS(dat_out,here::here("Data","mistnet_w_weather.rds"))
+# write.csv(dat_out,here::here("Data","mistnet_w_weather.csv"),row.names=F)
 ```
 

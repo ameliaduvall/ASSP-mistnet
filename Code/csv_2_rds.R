@@ -17,7 +17,7 @@ sessions <- sessions.raw %>%
   mutate_at((c("net_open_1", "net_open_2", "net_open_3", "net_open_4", "net_open_5",
                "net_close_1", "net_close_2", "net_close_3", "net_close_4", "net_close_5")), 
             ~ as_datetime(.x, format = "%m/%d/%Y %H:%M", tz = "America/Los_Angeles")) %>%
-  select(-1)
+  dplyr::select(-1)
 
 # Export as RDS
 saveRDS(sessions, here("Working", "sessions.RDS"))

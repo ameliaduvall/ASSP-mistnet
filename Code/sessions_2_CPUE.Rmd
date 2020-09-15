@@ -35,6 +35,13 @@ any(duplicated(sessions$session_ID))
 
 # Check for duplicated catch_IDs in captures.
 any(duplicated(captures$catch_ID))
+
+# Filter to ASSP spp only and remove SNRs and unbanded individuals
+ASSP <- captures %>%
+  filter(species == "ASSP" & recapture != "SNR" & band_no != "notbanded") # 3799 observations
+
+notbanded <- captures %>%
+  filter(species == "ASSP" & band_no == "notbanded") # 20 unbanded ASSP
 ```
 
 ## Add new fields
@@ -75,23 +82,28 @@ left_join(sun_vec, by = c("date", "lat", "lon")) %>%
          min_std = min_1_std + min_2_std + min_3_std + min_4_std + min_5_std,
          min = as.double(if_else(min < 0, "0", as.character(min))),
          min = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min))),
-         min_std = as.double(if_else(min_std <0, "0", as.character(min_std))),
+         min_std = as.double(if_else(min_std <0, "0", as.character(min_std))), 
+         min_std = as.double(if_else(min_std == 0, "NA", as.character(min_std))),# new line
          min_std = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min_std)))) %>%
   dplyr::select(-min_1:-min_5_std) %>%
   arrange(session_year) %>%
   filter(TRUE)
+
+# check min values
+summary(cpue_v1$min/60) # more intuitive to think in terms of hours
+summary(cpue_v1$min_std/60)
 ```
 
 ### ASSP, ASSP, CPUEraw, CPUEstd
 ```{r v2}
-catches_std <- captures %>%
+ASSP_std <- ASSP %>%
   dplyr::select(-c("flagged", "notes")) %>% # remove these fields since they exist in sessions w/ diff values
   left_join(cpue_v1, by = c("site_code", "session_ID", "lat", "long", "session_date", "session_month", "session_day", "session_year", "island_code", "subisland_code")) %>%  # join captures and cpue_v1 dataframes
   mutate(std = if_else(std_ending > capture_date, "1", "0"), # if bird was caught before std_ending = 1, after = 0
-         SNR = mosaic::derivedFactor(
-           "Y" = (recapture == "SNR"), # identify same night recaptures to be removed from CPUE
-           "N" = (recapture =="N" | recapture =="Y"), # recaps from other nights still count 
-           .default = NA),
+         # SNR = mosaic::derivedFactor(
+         #   "Y" = (recapture == "SNR"), # identify same night recaptures to be removed from CPUE
+         #   "N" = (recapture =="N" | recapture =="Y"), # recaps from other nights still count 
+         #   .default = NA),
          assumeBreed = mosaic::derivedFactor(
            "Y" = (BP == "B" | BP == "2" | BP == "3" | BP == "4"),
            "N" = (BP == "D" | BP == "d" | BP == "0" | BP == "5" | BP == "PD" | BP == "1" | BP == "1.5" | BP == "4.5"),
@@ -100,14 +112,13 @@ catches_std <- captures %>%
   filter(TRUE)
 
 # sum catches for each species and night
-cpue <- catches_std %>%
-  filter(species == "ASSP") %>% # filters to 3861 observations
+cpue <- ASSP_std %>%
   group_by(session_ID) %>%
-  summarise(ASSP = n(), # what about SNRs?
+  summarise(ASSP = n(), 
             ASSPstd = sum(std == "1"),
-            BPct = n(), # this includes NAs, need to fix. count(!is.na(BP))?
-            BP_Y = sum(assumeBreed == "Y"), # number of birds that have a broodpatch (2-4, B)
-            BP_N = sum(assumeBreed == "N")) %>% # number of birds that dont have a broodpatch (1, 1.5, 4.5, 5, PB, D)
+            BPct = count(!is.na(BP)), 
+            BP_Y = sum(assumeBreed == "Y", na.rm = TRUE), # number of birds that have a broodpatch (2-4, B)
+            BP_N = sum(assumeBreed == "N", na.rm = TRUE)) %>% # number of birds that dont have a broodpatch (1, 1.5, 4.5, 5, PB, D)
   ungroup() %>%
   right_join(cpue_v1, by= c("session_ID")) %>%
   mutate(CPUEraw =  ASSP/min,
@@ -119,7 +130,8 @@ cpue <- catches_std %>%
                 "net_close_1",	"net_open_2", "net_close_2",	"net_open_3",	"net_close_3",	"net_open_4",	"net_close_4", 
                 "net_open_5",	"net_close_5",	"min",	"min_std", "ASSP",	"ASSPstd",	"CPUEraw",	"CPUEstd", "BPfreq_Y",
                 "BPfreq_N", "net_mesh", "net_dim",	"spp_audio_file",	"dB_level", "speaker_system",	"org", "notes", 
-                "flagged",	"flagged_notes")
+                "flagged",	"flagged_notes") %>%
+  arrange(desc(session_year))
 
 # Check new fields
 chk <- cpue %>% 
@@ -130,6 +142,27 @@ sIDs <- unique(chk$session_ID)
 chkcaps <- captures %>%
   filter(session_ID %in% c(sIDs))
 ## There were no ASSP captures during these sessions
+
+# Check code for missing BP scores
+BPsNA <- ASSP %>%
+  filter(is.na(BP))
+BPsIDS <- unique(BPsNA$session_ID)
+## these are session_IDs with NA for BP scores
+
+# Look at one of these sessions
+chk.cpue <- cpue %>%
+  filter(session_ID == "2018-08-15_SBI_ESP")
+
+chk.cap <- ASSP %>%
+  filter(session_ID == "2018-08-15_SBI_ESP") #%>%
+  # group_by(BP) %>%
+  # summarize(n = n())
+
+chk.std <- ASSP_std %>%
+  filter(session_ID == "2018-08-15_SBI_ESP")
+
+# check CPUEstd
+summary(cpue$CPUEstd)
 ```  
 
 ## Export out
