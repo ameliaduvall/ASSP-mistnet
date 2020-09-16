@@ -385,6 +385,53 @@ dat$Illu<-moonInfo$illuminatedFraction
 And there you have it, this concludes the instructions on how to use the era5 data attacher!
 
 ```{r}
+# Emma ran code since she has older version of R
+dat_EK <- readRDS(here("Working", "mistnet_w_weather_hrly.RDS"))
+
+# Fix start times that were not in military time
+dat <- dat_EK %>%
+  filter(DateTime_h != "2018-06-13 09:00:00" &  #6/13/2018 between 9:00-20:00
+          DateTime_h != "2018-06-13 10:00:00" &
+          DateTime_h != "2018-06-13 11:00:00" &
+          DateTime_h != "2018-06-13 12:00:00" &
+          DateTime_h != "2018-06-13 13:00:00" &
+          DateTime_h != "2018-06-13 14:00:00" &
+          DateTime_h != "2018-06-13 15:00:00" &
+          DateTime_h != "2018-06-13 16:00:00" &
+          DateTime_h != "2018-06-13 17:00:00" & 
+          DateTime_h != "2018-06-13 18:00:00" &
+          DateTime_h != "2018-06-13 19:00:00" &
+          DateTime_h != "2018-06-13 20:00:00" &
+          DateTime_h != "2018-06-13 20:00:00" &
+          DateTime_h != "2014-08-08 11:00:00" & # 8/8/2014 between 11:00-22:00
+          DateTime_h != "2014-08-08 12:00:00" &
+          DateTime_h != "2014-08-08 13:00:00" &
+          DateTime_h != "2014-08-08 14:00:00" &
+          DateTime_h != "2014-08-08 15:00:00" &
+          DateTime_h != "2014-08-08 16:00:00" &
+          DateTime_h != "2014-08-08 17:00:00" &
+          DateTime_h != "2014-08-08 18:00:00" &
+          DateTime_h != "2014-08-08 19:00:00" &
+          DateTime_h != "2014-08-08 20:00:00" &
+          DateTime_h != "2014-08-08 21:00:00" &
+          DateTime_h != "2014-08-08 22:00:00" &
+          DateTime_h != "1994-08-09 11:00:00" & # 8/9/1994 between 11:00-22:00
+          DateTime_h != "1994-08-09 12:00:00" &
+          DateTime_h != "1994-08-09 13:00:00" &
+          DateTime_h != "1994-08-09 14:00:00" &
+          DateTime_h != "1994-08-09 15:00:00" &
+          DateTime_h != "1994-08-09 16:00:00" &
+          DateTime_h != "1994-08-09 17:00:00" &
+          DateTime_h != "1994-08-09 18:00:00" &
+          DateTime_h != "1994-08-09 19:00:00" &
+          DateTime_h != "1994-08-09 20:00:00" &
+          DateTime_h != "1994-08-09 21:00:00" &
+          DateTime_h != "1994-08-09 22:00:00")        
+
+dat_chk <- dat %>%
+  filter(session_ID == "2018-06-13_SCI_SR" | session_ID == "2014-08-08_SBI_ESP" | session_ID == "1994-08-09_SBI_WCliffs")
+# looks good!
+
 # summarize the mean per session (group by all the vars you want in the final dataset)
 dat_out<-dat %>% group_by(session_ID,
                           island_code,
@@ -438,7 +485,7 @@ hist(dat_out$Illu,breaks=30)
 hist(dat_out$MoonAltitude,breaks=30)
 hist(dat_out$Moonup,breaks=30)
 
-# saveRDS(dat_out,here::here("Data","mistnet_w_weather.rds"))
-# write.csv(dat_out,here::here("Data","mistnet_w_weather.csv"),row.names=F)
+saveRDS(dat_out,here::here("Working","mistnet_w_weather_v2.rds"))
+# write.csv(dat_out,here::here("Working","mistnet_w_weather_v2.csv"),row.names=F)
 ```
 
