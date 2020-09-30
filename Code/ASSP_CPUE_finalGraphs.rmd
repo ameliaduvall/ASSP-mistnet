@@ -34,7 +34,7 @@ metadata <- readRDS(here("Working", "cpue.RDS"))
 
 ## Filter data to ASSP species and remove SNRs and unbanded individuals 
 ASSP <- banding %>% 
-  filter(species == "ASSP" & recapture != "SNR" & band_no != "notbanded") # 3799 observations
+  filter(species == "ASSP" & recapture != "SNR") & band_no != "notbanded") # 3799 observations
 
 unbanded <- banding %>%
   filter(species == "ASSP" & band_no == "notbanded") # 20 unbanded ASSP
@@ -66,6 +66,16 @@ species <- banding %>%
   group_by(species) %>%
   summarize(n=n()) %>%
   arrange(desc(n))
+```
+
+#### Gant chart
+```{r gant}
+ggplot(metadata, aes(session_year, island_code, color = org)) +  
+  geom_point(size = 12, shape = 15) +   
+  scale_x_continuous(name="Years of Mistnetting effort", breaks=seq(1994, 2018, 4)) +    ylab("Island") +  scale_color_brewer(palette="BrBG") +  
+  theme_cowplot(12)
+
+#ggsave(width = 12, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/ganttYrs.pdf")
 ```
 
 #### CPUE graphs
@@ -508,9 +518,66 @@ r3 <- ggplot(recap, aes(x = as.character(session_year), y = ratio)) +
 # plot in grid
 # breeders <- plot_grid(b1, b2, b3)
 r <- grid.arrange(arrangeGrob(r1,r2, ncol=2, nrow=1),r3)
-ggsave("recaps.jpg", r, width = 9, height = 5)
-
+# ggsave("recaps.jpg", r, width = 9, height = 5)
 ```
+
+Recaptures over time
+```{r recap2}
+recap2 <- ASSP %>%
+  filter(recapture == "Y") %>%
+  group_by(band_no) %>%
+  summarize(n = n()) %>%
+  arrange(desc(n))
+
+recap.sum <- recap2 %>%
+  group_by(n) %>%
+  summarize(n = n())
+
+band.recaps <- unique(recap2$band_no)
+
+recap3 <- ASSP %>%
+  filter(band_no %in% c(band.recaps)) %>%
+  arrange(band_no) %>%
+  dplyr::select(band_no, recapture, session_year, session_date, island_code, site_code)
+
+recap3.sum <- recap3 %>%
+  group_by(band_no) %>%
+  summarize(n = n())
+
+# write.csv(recap3, here("Output", "recap_by_band.csv"), row.names = FALSE)
+
+recap.no <- recap3 %>%
+  filter(recapture == "N") %>%
+  mutate(capture_year = session_year, capture_date = session_date,
+         capture_island = island_code, capture_site = site_code) %>%
+  dplyr::select(-c(recapture))
+
+recap.yes <- recap3 %>%
+  filter(recapture == "Y") %>%
+  mutate(recapture_date = session_date,
+         recapture_year = session_year,
+         recapture_island = island_code,
+         recapture_site = site_code) %>%
+  dplyr::select(band_no, recapture_year, recapture_date,
+                recapture_island, recapture_site)
+
+recap.table <- left_join(recap.yes, recap.no, by = "band_no") %>%
+  dplyr::select(band_no, capture_year, capture_date, capture_island, capture_site, 
+                recapture_year, recapture_date, recapture_island, recapture_site) %>%
+  arrange(capture_year, recapture_date) %>%
+  rename("Band Number" = band_no,
+         "Capture Year" = capture_year,
+         "Capture Date" = capture_date,
+         "Capture Island" = capture_island,
+         "Capture Site" = capture_site,
+         "Recapture Year" = recapture_year,
+         "Recapture Date" = recapture_date,
+         "Recapture Island" = recapture_island,
+         "Recapture Site" = recapture_site) 
+
+write.csv(recap.table, here("Output", "recap_table.csv"), row.names = FALSE)
+```
+
 
 ## BROOD PATCH
 ```{r broodpatch}

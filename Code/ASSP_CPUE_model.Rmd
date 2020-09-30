@@ -20,7 +20,7 @@ libraries("lme4", "here", "tidyverse", "ggplot2", "lubridate",
           "faraway", "anchors", "readxl", "naniar", "remotes")
 ```
 
-
+see Russ Bradley et al. 2011 paper for ideas
 
 ```{r data}
 ## read-in data 
@@ -35,8 +35,9 @@ dfr <- inner_join(wx, CPUE, by = c("session_ID", "island_code", "site_code", "la
                                  "surface_pressure" = "NaN", "sst" = "NaN", "temp_c" = "NaN",
                                  "dew_point" = "NaN", "Moonup" = "NaN", "MoonAltitude" = "NaN", 
                                  "Illu"= "NaN")) %>%
+  mutate(wind_speed = sqrt(wind_u^2+wind_v^2)) %>%
   dplyr::select("session_ID", "session_year", "session_month", "island_code", "site_code", 
-                "start":"Illu", "CPUEstd") %>%
+                "start", "end", "wind_speed", "tot_precip", "wave_height":"Illu", "CPUEstd") %>%
   filter(!is.na(CPUEstd)) %>% # 197 obs
   mutate(logCPUE = log(CPUEstd)) %>% # use log of CPUEstd
   ungroup()
@@ -164,6 +165,9 @@ Correlated predictors:
 * moonup and illu
 * moonaltitude and illu
 * moonup and moonaltitude
+
+*wing_speed = sqrt(wind_u^2+wind_v^2)*
+*moon time above horizon x illu*
 
 ```{r mod}
 preds <- c("tot_precip", "wind_u", "wind_v", "wave_height", "wave_dir", 

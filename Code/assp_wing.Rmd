@@ -1,0 +1,121 @@
+---
+title: "ASSP Wing Chord"
+author: "Amelia J. DuVall"
+date: "9/10/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Read-in data
+```{r data, message = FALSE}
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(hms)
+library(tidyverse)
+library(ggplot2)
+library(EnvStats)
+library(here)
+
+captures <- readRDS(here("Working", "captures.RDS"))
+metadata <- readRDS(here("Working", "cpue.RDS"))
+
+# Filter to LESP and ASSP
+ASSP <- captures %>%
+  filter(species == "ASSP")
+
+LESP <- captures %>%
+  filter(species == "LHSP")
+
+```
+
+
+## Ashy Storm-Petrel
+```{r ASSP}
+summary(ASSP$wing)
+
+# Are there any lengths greater than 148mm?
+long <- ASSP %>%
+  filter(wing > 147)
+# 138 observations
+# Mike Parker believes any individuals with wing chord >147mm are LHSP. 
+```
+
+
+```{r ASSPplots}
+ggplot(data = ASSP, aes(x = wing), na.rm = TRUE) +
+  geom_histogram(aes(y = ..density..), binwidth = 1) + 
+  geom_density(alpha = .5, fill = "gray") +
+  geom_vline(aes(xintercept = mean(wing, na.rm = TRUE)),
+             colour = "red", linetype ="longdash", size = .8) +
+  stat_n_text(aes(y = mean(wing)), y.pos = 0.3) +
+  theme_bw()
+
+wing <- ggplot(data = ASSP, aes(x = island_code, y = wing)) +
+  geom_boxplot() +
+  xlab("Island") + ylab("Wing Chord") +
+  theme_bw()
+wing
+
+summary(ASSP$wing)
+
+# Look for indication of different methods used to measure wing chord 
+# (e.g, flattened wing chord versus relaxed wing chord). 
+avwing <- mean(ASSP$wing, na.rm = TRUE)
+
+# by island
+wing.isl <- ggplot(ASSP, aes(x = island_code, y = wing)) +
+  geom_boxplot() +
+  xlab("Island") + ylab("Wing Chord (mm)") +
+  geom_hline(yintercept = avwing, linetype = "dashed", color = "black", size = 1, alpha = 0.5) +
+  theme_bw()
+wing.isl
+
+# by organization and island
+ASSPorg <- inner_join(ASSP, metadata, by = "session_ID")
+
+wing.org <- ggplot(ASSPorg, aes(x = org, y = wing)) +
+  geom_boxplot() +
+  xlab("Island") + ylab("Wing Chord (mm)") +
+  geom_hline(yintercept = avwing, linetype = "dashed", color = "black", size = 1, alpha = 0.5) +
+  theme_bw()
+wing.org
+```
+
+
+```{r LESP}
+summary(LESP$wing)
+# only 47 observations
+
+ggplot(data = LESP, aes(x = wing), na.rm = TRUE) +
+  geom_histogram(aes(y = ..density..), binwidth = 5) + 
+  geom_density(alpha = .5, fill = "gray") +
+  geom_vline(aes(xintercept = mean(wing, na.rm = TRUE)),
+             colour = "red", linetype ="longdash", size = .8) +
+  theme_bw()
+
+LESPsummary <- LESP %>% 
+  group_by(session_year, island_code) %>%
+  summarize(n = n())
+
+LESPyr <- LESP %>% 
+  group_by(session_year) %>%
+  summarize(n = n())
+
+ggplot(data = LESPsummary, aes(x = as.character(session_year), y = n, color = island_code)) +
+  xlab("Year") + ylab("No. of LHSP captured") +
+  geom_point() +
+  theme_bw()
+
+
+## check PRBO reports for flattened wing length
+
+## josh adams sample size LHSP morphometrics
+# 41 LHSP
+
+# what do they do in MX?
+```
