@@ -6,9 +6,10 @@ site_code,character,"Abbreviation for site where mistnetting session occurred. S
 site_name,character,"Name of mistnetting site. See ""sites"" table. Some sites were grouped together due to their proximity (see ""site_alias"" field)."
 lat,numeric (10 sig figs),"Numerical value indicating latitude of mistnetting site in decimal degrees. ""ND"" indicates this information is not known (e.g., site was not recorded). See ""sites"" table."
 long,numeric (10 sig figs),"Numerical value indicating longitude of mistnetting site in decimal degrees. ""ND"" indicates this information is not known (e.g., site was not recorded).  See ""sites"" table."
+session_date,time stamp,
+year,numeric (YYYY),Year in which mistnetting session began. 
 month,numeric (1-12),Month in which mistnetting session began. 
 day,numeric (1-31),Day on which mistnetting session began. 
-year,numeric (YYYY),Year in which mistnetting session began. 
 series_ID,"numeric (1, 2, 3)","Numerical value indicating sequence of mistnetting session in series of consecutive nights of mistnetting sessions at the same site. Mistnetting sessions were considered a part of a consecutive series if >1 mistnetting sessions occurred at the same site within a 5-day window. Values used include: 1 ( first night of mistnetting session at the same site within a 5-day window; OR session was not part of a consective series of mistnetting sessions), 2 (second night of mistnetting session at the same site within a 5-day window), 3 ( third night of mistnetting session at the same site within a 5-day window)."
 app_sunset,time stamp,"Time of apparent sunset at mistnetting location.  Obtained using ""sunsetTime"" function in R."
 std_ending,time stamp,"Standard ending of mistnetting effort, 5.3 hours after apparent sunset.  The 5.3 hour cutoff was derived from Adams (2016).  "
@@ -28,6 +29,8 @@ ASSP,numeric,Total number of new ASSP (not recaptures) caught during the session
 ASSPstd,numeric,Total number of new ASSP (not recaptures) caught during the session before the standard ending time.
 CPUEraw,numeric,Catch-per-unit effort: ASSP caught per minute during the session (ASSP/min).
 CPUEstd,numeric,Standardized Catch-per-unit effort: ASSP caught per minute during the session before standard ending time (ASSPstd/min_std).
+BPfreq_Y,,
+BPfreq_N,,
 net_mesh,numeric,"Measurement of the size of the opening in net used and defined as one-half of the perimeter of one of the mesh squares of the net. This distance can best be measured by stretching a mesh square, measuring one of the four sides, and multiplying by 2 = designated mesh size. Example: One side of the mesh square reads as 18mm. 18mm x 2 = 36mm mesh (as definied by Avinet Research Supplies). Usually 30 or 38 mm. ""ND"" indicates this information was not recorded."
 net_dim,character,"Dimensions of net area used during mistnetting session (in m). Usually 6 x 2.6, 9 x 2.6, 12 x 2.6, or 18 x 2.6. ""ND"" indicates this information was not recorded."
 spp_audio_lure,character,"Type of vocalization playback (i.e., audio lure) used during mistnetting session. Usually indicated by species alpha code (e.g., ASSP); see ""species"" field in captures data dictionary. In some cases, multiple types of vocalization playback were used in one mistnetting session (indicated by ""Multiple""); see the ""notes"" field for more information. ""ND"" indicates this information was not recorded."

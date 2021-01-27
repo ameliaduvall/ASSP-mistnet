@@ -1,21 +1,26 @@
 field,value,definition
 catch_ID,character,"Unique identification code given to each capture record structured as ""YYYYMMDD_island_subisland_sitename_#""and is created by appending the sequential catch number to the session ID.  Each catch event is considered unique, including recaptures and same night recaptures."
 session_ID,character,"Unique identification code given to each mistnetting session structured as ""YYYYMMDD_island_subisland_sitename"".  See ""day"" field for more information regarding misnetting session dates. "
+session_date,time stamp,
+year,numeric (YYYY),Year in which mistnetting session began. 
 month,numeric (1-12),Month in which mistnetting session began. 
 day,numeric (1-31),"Day on which mistnetting session began. This value does not change after midnight; the ""true"" date of the capture is reflected in the ""capture_time"" field."
-year,numeric (YYYY),Year in which mistnetting session began. 
 island_code,character,"Abbreviation for island where mistnetting session occurred. See ""sites"" table."
 subisland_code,character,"Abbreviation for subisland where mistnetting session occurred. See ""sites"" table."
 site_code,character,"Abbreviation for site where mistnetting session occurred. See ""sites"" table. Some sites were grouped together due to their proximity (see ""site_alias"" field)."
 lat,numeric (10 sig figs),"Numerical value indicating latitude of mistnetting site in decimal degrees. ""ND"" = site lat/long was not recorded."
 long,numeric (10 sig figs),"Numerical value indicating longitude of mistnetting site in decimal degrees. ""ND"" = site lat/long was not recorded."
-capture_time,time stamp,"Date and time at which individual was captured in net. This date reflects the true date of the capture.  ""ND"" indicates this information was not recorded."
+capture_date,time stamp,"Date and time at which individual was captured in net. This date reflects the true date of the capture.  ""ND"" indicates this information was not recorded."
+capture_year,,
+capture_month,,
+capture_day,,
 capture_hour,integer,Hour at which the individual was captured in the net. 
 capture_min,integer,Minute at which the individual was captured in the net. 
 release_time,time stamp,"Date and time at which individual was released. ""ND"" indicates this information was not recorded."
 species,character,"Unique four-letter species alpha code used by US Geological Survey Bird Banding Laboratory (BBL). Codes used include: ASSP (Ashy storm-petrel, Oceanodroma homochroa), BLSP (Black storm-petrel, Oceanodroma melania), CAAU (Cassin's auklet, Ptychoramphus aleuticus), JOPE (Jouanin's petrel, Bulweria fallax), LHSP (Leach's storm-petrel, Oceanodroma leucorhoa), LTSP (Least storm-petrel, Oceanodroma microsoma), WEGU (Western gull, Larus occidentalis), XAMU (Xantus's murrelet, split into Scripps's murrelet [Synthliboramphus scrippsi] and Guadalupe murrelet [Synthliboramphus hypoleucus] in August 2012). ""ND"" indicates this information was not recorded. We cannot verify that species were identified correctly (e.g., Leach's Storm-Petrel versus Ashy Storm-Petrel)."
 band_no,character,"Unique individual band number issued by the US Geological Survey Bird Banding Laboratory (BBL) or Mexico's SEMARNAT (Secretaria de Medio Ambiente y Recursos Naturales). ""not banded"" indicates the individual was not banded (reasons for not banding sometimes described in notes)."
 recapture,character,"Whether or not the bird was a recapture of a previously banded bird. Codes used : Y (yes, individual had a band when captured), N (no, individual was a new capture and did not have a band when captured), SNR (same night recapture, individual capture rate was >1 during the same mistnetting session). ""ND"" (information was not recorded). "
+replaced,character,Whether or not the band was replaced on a preivously banded bird. See notes for more details.
 diet,character,"Whether or not diet sample was collected. Codes used : Y (yes, a diet sample was collected), N (no, a diet sample was not collected). Assumed ""N"" if cell was blank.  "
 BP,numeric/character,"Brood patch status of individual. Codes used : 0 (completely covered with down, no incubation patch), 1 (5-50% defeathered, partially downy), 1.5 (51-95% defeathered, partially downy; also recorded as: 1 to 2, 1.5 to 2, 1+), 2 (96-100% bare, unvascularized; also recorded as: 2.5, 2+), 3 (96-100% bare, vascularized, reddish, thickened; also recorded as: 3.5, 3-4), 4 (5-50% refeathered, note pins present), 4.5 (51-95% refeathered, note pins present), 5 (96-100% refeathered, no incubation patch, can be hard to separate from score = 0), B (bare, brood patch evidence), D (down, no incubation patch evident), PD (partly downy, patch forming or receding), ""ND"" (information was not recorded)."
 uncorr_mass,numeric,"Uncorrected mass of individual (in g), e.g. includes weight of individual and weighing vessel. Rounded to nearest whole number if value to the tenths or hundredths was provided in raw data. Unconfirmed, but likely all/most measurements were taken with a Pesola spring scale. ""ND"" indicates this information was not recorded. "

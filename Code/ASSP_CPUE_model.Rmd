@@ -17,10 +17,29 @@ knitr::opts_chunk$set(message = FALSE)
 ## load packages
 library(easypackages)
 libraries("lme4", "here", "tidyverse", "ggplot2", "lubridate", 
-          "faraway", "anchors", "readxl", "naniar", "remotes")
+          "faraway", "anchors", "readxl", "naniar", "remotes",
+          "corrplot", "Hmisc")
 ```
 
-see Russ Bradley et al. 2011 paper for ideas
+
+Notes
+We decided to use three random effects (site code, year, month) to account for some variation in CPUE. 
+
+* see Russ Bradley et al. 2011 paper for ideas
+* what are our questions?
+* include other env'l covariates? index of productivity
+* how to include brood   patch
+* include year^2, month^2, etc?
+* do we need to check the CPUE file..? or wx data file? can't remember if that needs re-run (remove sites w. NA)
+* include session night as a covariate?
+* wind speed at midnight
+* change random effects? include month as random effect? and series_ID? too many RE?
+* why is CPUE changing temporally and spatially?
+* can do same thing with frequency of assumed breeders CPUE? 
+* and does this inform how we approach future mistnetting efforts? 
+* maybe month should be a predictor? 
+* collapse down into island (remove site) 
+
 
 ```{r data}
 ## read-in data 
@@ -41,20 +60,32 @@ dfr <- inner_join(wx, CPUE, by = c("session_ID", "island_code", "site_code", "la
   filter(!is.na(CPUEstd)) %>% # 197 obs
   mutate(logCPUE = log(CPUEstd)) %>% # use log of CPUEstd
   ungroup()
+
+## moonT * Illu
+## using hourly data was sum of Moonup
+## ek to send new RDS file with 4 new variables--moonT, moon index, wind speed at midnight, avg wind speed
+## multity 2 moon variables
   
 ## check CPUEstd NAs
 NAs <- CPUE %>%
   filter(is.na(CPUEstd)) # 40 obs
 
 ## scale predictors
-df <-  dfr %>% 
-  mutate(tot_precip = scale(tot_precip),wind_u = scale(wind_u),
-         wind_v = scale(wind_v), wave_height = scale(wave_height),
-         wave_dir = scale(wave_dir), wave_period = scale(wave_period),
-         tot_cloud = scale(tot_cloud), low_cloud = scale(low_cloud),
-         pressure = scale(pressure), surface_pressure = scale(surface_pressure),
-         sst = scale(sst), temp_c = scale(temp_c), dew_point = scale(dew_point),
-         Moonup = scale(Moonup), MoonAltitude = scale(MoonAltitude), 
+df <-  dfr %>% ## issues trying this with mutate_at
+  mutate(tot_precip = scale(tot_precip),
+         wind_speed = scale(wind_speed), 
+         wave_height = scale(wave_height),
+         wave_dir = scale(wave_dir), 
+         wave_period = scale(wave_period),
+         tot_cloud = scale(tot_cloud), 
+         low_cloud = scale(low_cloud),
+         pressure = scale(pressure), 
+         surface_pressure = scale(surface_pressure),
+         sst = scale(sst), 
+         temp_c = scale(temp_c), 
+         dew_point = scale(dew_point),
+         Moonup = scale(Moonup), 
+         MoonAltitude = scale(MoonAltitude), 
          Illu = scale(Illu))
 
 ## explore data
@@ -68,8 +99,7 @@ ggplot(df) +
 ggplot(df) +
   geom_histogram(mapping = aes(x = logCPUE), bins = 20) +
   xlab("logCPUE") + ylab("Frequency") +
-  theme_minimal()
-# Looks better!
+  theme_minimal() # Looks better!
 
 ## other plots
 effort <- df %>%
@@ -87,7 +117,7 @@ ggplot(effort) +
 ```{r nullmodel}
 ## fit intercept-only model
 # site and year as random effects
-nmRE <- lmer(logCPUE ~ 1 + (1 | site_code) + (1 | session_year), data = df)
+nmRE <- lmer(logCPUE ~ 1 + (1 | site_code) + (1 | session_year) + (1 | session_month), data = df)
 sumary(nmRE)
 plot(nmRE)
 
@@ -105,17 +135,31 @@ qqline(residuals(nmRE)) # doesn't look too bad
 plot(fitted(nmRE), residuals(nmRE), las = 1, pch = 16,
 xlab = "Fitted", ylab = "Residuals",
 main = "Residuals vs fitted")
-abline(h=0, lty = "dashed") # also does not look too bad
+abline(h=0, lty = "dashed") # also does not look too bad, some heteroscedasticity 
 
-## other models
-# island as explanation for CPUE?
-isl <- lm(CPUEstd ~ island_code, data = df)
-sumary(isl)
-plot(isl)
+## try sq rt of absolute value of residuals v fitted values
+sqrtresid <- sqrt(abs(fitted(nmRE)))
 
-# try w/o random effects
-nm <- lm(logCPUE ~ 1, data = df)
-summary(nm)
+plot(fitted(nmRE), sqrtresid, las = 1, pch = 16,
+xlab = "Fitted", ylab = "Residuals",
+main = "Residuals vs fitted")
+abline(h=0, lty = "dashed")
+
+## Levene's test
+resids <- residuals(nmRE)
+g1 <- resids[resids < median(resids)]
+g2 <- resids[resids < median(resids)]
+var.test(g1, g2)
+
+# ## other models
+# # island as explanation for CPUE?
+# isl <- lm(CPUEstd ~ island_code, data = df)
+# sumary(isl)
+# plot(isl)
+# 
+# # try w/o random effects
+# nm <- lm(logCPUE ~ 1, data = df)
+# summary(nm)
 ```
 
 ## Predictors from ERA5 reanalysis data
@@ -148,10 +192,37 @@ https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadoc
 * moonaltitude = altitude = moon altitude, in degrees from -90 to 90.
 * illu = 'illuminatedFraction' = fraction of moon’s visible disk that is illuminated
 
+### Correlation between predictors 
 ```{r corr}
 ## check for correlation between predictors (cutoff >0.65)
 (cp <- as.data.frame((round(cor(df[,10:25], use="complete.obs"), 2))))
+
+# covs df
+covs <- dfr %>%
+  dplyr::select(wind_speed:Illu)
+
+# this function flattens your data in a particular way, used below
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+  )
+}
+
+cor <- rcorr(as.matrix(covs))
+
+# creates a new formatted df
+cor_vals <- flattenCorrMatrix(cor$r, cor$P) %>% arrange(cor)
+
+#makes a plot
+corrplot(cor$r, type = "lower", order = "original", p.mat = cor$P,
+         insig = "blank", sig.level = 0.01, tl.col = "black", tl.cex = .9, number.cex = .2)
 ```
+Positive correlations are displayed in blue and negative correlations in red color. Color intensity and the size of the circle are proportional to the correlation coefficients.
+
 Correlated predictors:
 * wind_u and wind_v 
 * wind_v and wave_height
