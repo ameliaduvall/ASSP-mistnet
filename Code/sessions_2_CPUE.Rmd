@@ -27,8 +27,10 @@ This is `r paste0("v.", (Sys.Date()))`
 
 ## Read-in data
 ```{r readin}
-sessions <- readRDS(here::here("Working", "sessions.RDS"))
-captures <- readRDS(here::here("Working", "captures.RDS"))
+# sessions <- readRDS(here::here("Working", "sessions.RDS"))
+# captures <- readRDS(here::here("Working", "captures.RDS"))
+sessions <- readRDS(here::here("Data", "database", "sessions.RDS"))
+captures <- readRDS(here::here("Data", "database", "captures.RDS"))
 
 # Check for duplicated session_IDs in sessions. This will affect joining data frames by session_ID. 
 any(duplicated(sessions$session_ID))
@@ -42,6 +44,11 @@ ASSP <- captures %>%
 
 notbanded <- captures %>%
   filter(species == "ASSP" & band_no == "notbanded") # 20 unbanded ASSP
+
+LESP <- captures %>%
+  filter(species == "LHSP" & recapture != "SNR" & band_no != "notbanded") %>%
+  group_by(session_ID) %>%
+  summarize(n = n())
 ```
 
 ## Add new fields
@@ -168,6 +175,6 @@ summary(cpue$CPUEstd)
 ## Export out
 ```{r export}
 # Exporting as RDS will preserve date/time fields
-saveRDS(cpue, here("Working", "cpue.RDS"))
-write.csv(cpue, here("Working", "cpue.csv"), row.names = FALSE)
+saveRDS(cpue, here("Data", "database", "cpue.RDS"))
+write.csv(cpue, here("Data", "database", "cpue.csv"), row.names = FALSE)
 ```

@@ -30,10 +30,12 @@ library(pastecs)
 
 
 ### READ IN DATA
-banding <- readRDS(here("ASSP_share", "captures.RDS"))
-metadata <- readRDS(here("ASSP_share", "cpue.RDS")) 
-wx_metadata <- readRDS(here("ASSP_share", "mistnet_w_weather.RDS")) 
-wx_metadata_hrly <- readRDS(here("ASSP_share", "mistnet_w_weather_hrly.RDS")) 
+# banding <- readRDS(here("ASSP_share", "captures.RDS"))
+# metadata <- readRDS(here("ASSP_share", "cpue.RDS")) 
+banding <- readRDS(here("Data", "database", "captures.RDS"))
+metadata <- readRDS(here("Data", "database", "cpue.RDS"))
+#wx_metadata <- readRDS(here("ASSP_share", "mistnet_w_weather.RDS")) 
+#wx_metadata_hrly <- readRDS(here("ASSP_share", "mistnet_w_weather_hrly.RDS")) 
 
 ## Filter data to ASSP species and remove SNRs and unbanded individuals 
 ASSP <- banding %>% 
@@ -105,7 +107,7 @@ series <- ggplot(metadata_series, aes(as.character(series_ID), CPUEraw)) +
   xlab("Sequential Night") + ylab("Catch-Per-Unit-Effort") +
   theme_cowplot(12) # theme_bw()
 series
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEseries.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEseries.pdf")
 
 series_std <- ggplot(metadata_series, aes(as.character(series_ID), CPUEstd)) +
   geom_boxplot() +
@@ -113,7 +115,7 @@ series_std <- ggplot(metadata_series, aes(as.character(series_ID), CPUEstd)) +
   xlab("Sequential Night") + ylab("Standardized Catch-Per-Unit-Effort") +
   theme_cowplot(12) # theme_bw()
 series_std
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEseries_std.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEseries_std.pdf")
 ```
 
 # CPUE by Month and Year
@@ -126,7 +128,7 @@ month <- ggplot(metadata, aes(as.character(session_month), CPUEstd)) +
   xlab("Month") + ylab("Standardized Catch-Per-Unit-Effort") +
   theme_cowplot(12) # theme_bw()
 month
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month.pdf")
 
 
 # gather monthly data so that raw and std CPUE can be graphed side-by-side
@@ -141,7 +143,7 @@ month2 <- ggplot(metadata_month, aes(as.character(session_month), CPUE)) +
   xlab("Month") + ylab("Catch-Per-Unit-Effort") +
   theme_cowplot(12) # theme_bw()
 month2
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month2.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month2.pdf")
 ```
 These graphs show how catch rates varied across months 
 
@@ -163,7 +165,7 @@ month_isl <- ggplot(metadata, aes(as.character(session_month), CPUEstd)) +
   stat_n_text(y.pos = 0.42) +
   theme_cowplot(12) # theme_bw()
 month_isl
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month_isl.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month_isl.pdf")
 ```
 This graph shows catch rates by month for all locations combined and then each sub-island and island separately
 
@@ -182,7 +184,7 @@ month_brd <- ggplot(metadata_brd, aes(as.character(session_month), CPUE, color =
   xlab("Month") + ylab("Standardized CPUE") +
   theme_cowplot(12) # theme_bw()
 month_brd
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEbrd_month.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEbrd_month.pdf")
 ```
 This graphs shows the total CPUE each month, as well as the CPUE of assumed breeders (based on broodpatch score)
 NOTE: the samples sizes at the top are the sum of CPUEbrd_std and CPUEstd
@@ -193,11 +195,12 @@ year <- ggplot(metadata, aes(as.character(session_year), CPUEstd)) +
   geom_boxplot() +
   xlab("Year") + ylab("Standardized Catch-Per-Unit-Effort") +
   stat_n_text(size = 3.5, y.pos = 0.41) +
+  ggtitle("Channel Islands National Park") +
   theme_cowplot(12) # theme_bw()
 year %+% subset(metadata, session_year %in% c("1994", "1995", "1996", "2004", "2005", "2006", "2007", "2009", 
-                                            "2010", "2011", "2014", "2015", "2016", "2017", "2018"))
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr.pdf")
-
+                                            "2010", "2011", "2014", "2015", "2016", "2017", "2018", "2021"))
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr.pdf")
+ggsave(here("Figures", "cpue_by_year.png"))
 
 # gather annual data by CPUE so that CPUE raw and std can be graphed alongside eachother
 metadata_yr <- metadata %>%
@@ -211,7 +214,40 @@ year2 <- ggplot(metadata_yr, aes(as.character(session_year), CPUE)) +
   stat_n_text(size = 3, y.pos = 0.37) +
   theme_bw()
 year2
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr2.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr2.pdf")
+
+## 2021 sites only
+sites_only <- ggplot(metadata, 
+                  aes(as.character(session_year), CPUEstd, color = site_code)) +
+  geom_boxplot(position = position_dodge2(preserve = "single")) +
+  facet_wrap(~site_code) + xlab("Year") + ylab("Standardized Catch-Per-Unit-Effort") +
+  ggtitle("2021 Mistnetting Sites") +
+  stat_n_text(size = 3.5, y.pos = 0.41) +
+  theme_cowplot(12) +
+  theme(axis.text.x = element_text(angle = 90),
+        panel.spacing = unit(2, "lines"),
+        legend.position = "none")
+sites_only %+% subset(metadata, session_year %in% c("1994", "1995", "1996", "2004", "2005", "2006", "2007", "2009", 
+                                            "2010", "2011", "2014", "2015", "2016", "2017", "2018", "2021") &
+                     site_code == "AP" | site_code == "ESP" | site_code == "SR")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr.pdf")
+ggsave(width = 15, height = 5, here("Figures", "sites_2021_cpue_by_year.png"))
+
+SBI_SCI_year <- ggplot(metadata, 
+                  aes(as.character(session_year), CPUEstd, color = island_code)) +
+  geom_boxplot() +
+  facet_wrap(~island_code) +
+  xlab("Year") + ylab("Standardized Catch-Per-Unit-Effort") +
+  ggtitle("Santa Barbara and Santa Cruz Islands") +
+  stat_n_text(size = 3.5, y.pos = 0.41) +
+  theme_cowplot(12) +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "none")
+SBI_SCI_year %+% subset(metadata, session_year %in% c("1994", "1995", "1996", "2004", "2005", "2006", "2007", "2009", 
+                                            "2010", "2011", "2014", "2015", "2016", "2017", "2018", "2021") &
+                     island_code == "SBI" | island_code == "SCI")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr.pdf")
+ggsave(width = 12, height = 5, here("Figures", "SBI_SCI_cpue_by_year.png"))
 ```
 This graph show how catch rates varied across years for all sites combined
 
@@ -233,7 +269,7 @@ year_isl <- ggplot(metadata, aes(as.character(session_year), CPUEstd)) +
   stat_n_text(size = 2, y.pos = 0.41) +
   theme(axis.text.x = element_text(angle = 90)) 
 year_isl 
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr_isl.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_yr_isl.pdf")
 ```
 These graphs show how catch rates vary across years for sub-island and island separately
 NOTE: This graph is broken out by sub-island which is intermediate between "island" and "site".  
@@ -250,7 +286,7 @@ year_brd <- ggplot(metadata_brd_yr, aes(as.character(session_year), CPUE, color 
   stat_n_text(size = 3, y.pos = 0.4) +
   theme(axis.text.x = element_text(angle = 90))
 year_brd
-ggsave(width = 10, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEbrd_yr.pdf")
+#ggsave(width = 10, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUEbrd_yr.pdf")
 ```
 This graph shows annual CPUE compared to the CPUE of assumed breeders (based on broodpatch score)
 NOTE: the samples sizes at the top are the sum of CPUEbrd_std and CPUEstd
@@ -261,11 +297,13 @@ month_year <- ggplot(metadata, aes(as.character(session_month), CPUEstd)) +
   geom_boxplot() +
   facet_wrap(.~session_year) +
   xlab("Month") + ylab("Standardized CPUE") +
+  ggtitle("Channel Islands National Park") +
   stat_n_text(size = 2.5, y.pos = 0.35) +
   theme_cowplot(12) # theme_bw()
 month_year %+% subset(metadata, session_year %in% c("1994", "1995", "1996", "2004", "2005", "2006", "2007", "2009", 
-                                            "2010", "2011", "2014", "2015", "2016", "2017", "2018"))
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month_yr.pdf")
+                                            "2010", "2011", "2014", "2015", "2016", "2017", "2018", "2021"))
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_month_yr.pdf")
+ggsave(here("Figures", "cpue_month_year.png"))
 ```
 This graph shows how catches varied across months, for each year separately.  Most years do not have enough data to show much of a pattern
 
@@ -277,7 +315,7 @@ island <- ggplot(metadata, aes(island_code, CPUEstd)) +
   stat_n_text(size = 4, y.pos = 0.41) +
   theme_cowplot(12) # theme_bw()
 island 
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_isl.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_isl.pdf")
 
 
 # gather CPUE raw and std data so that island CPUE raw and std can be viewed side-by-side
@@ -292,7 +330,7 @@ island2 <- ggplot(metadata_isl, aes(island_code, CPUE)) +
   stat_n_text(size = 4, y.pos = 0.41) +
   theme_cowplot(12) # theme_bw()
 island2 
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_isl2.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_isl2.pdf")
 ```
 These graphs show how catch rates varied across islands for all years combined
 
@@ -304,7 +342,7 @@ site <- ggplot(metadata, aes(site_code, CPUEraw)) +
   stat_n_text(size = 3, y.pos = 0.4) +
   theme_cowplot(12) # theme_bw()
 site  %+% subset(metadata, site_code %in% c("AP", "ESP", "PI", "SR"))
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_siteRaw.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_siteRaw.pdf")
 
 site <- ggplot(metadata, aes(site_code, CPUEstd)) +
   geom_boxplot() +
@@ -313,23 +351,31 @@ site <- ggplot(metadata, aes(site_code, CPUEstd)) +
   stat_n_text(size = 3, y.pos = 0.4) +
   theme_cowplot(12) # theme_bw()
 site  %+% subset(metadata, site_code %in% c("AP", "ESP", "PI", "SR"))
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_siteStd.pdf")
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_siteStd.pdf")
 ```
 These graphs show how catch rates varied across sites across islands for all years combined
 
 ```{r CPUE sites 2}
 # select mistnetting sites that correspond with acoustic sites
 metadata_ARU <- metadata %>% 
-  filter(site_code == c("AP", "ESP", "SR", "PI"))
+  filter(site_code %in% c("AP", "ESP", "SR", "PI")) %>%
+  filter(session_year %in% c("2016", "2017", "2018", "2021"))
 
-isl_yr <- ggplot(metadata_ARU, aes(as.character(session_year), CPUEstd)) +
+isl_yr <- ggplot(metadata_ARU, aes(as.character(session_year), CPUEstd, color = site_code)) +
   geom_boxplot() +
   facet_grid(.~site_code) +
-  xlab("Island") + ylab("Standardized CPUE") +
+  xlab("Sites") + ylab("Standardized CPUE") +
   stat_n_text(size = 3, y.pos = 0.3) +
-  theme_cowplot(12) # theme_bw()
-isl_yr %+% subset(metadata_ARU, session_year %in% c("2016", "2017", "2018"))
-ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_ARUsites.pdf")
+  theme_cowplot(12) +
+  theme(axis.text.x = element_text(angle = 90),
+        panel.spacing = unit(2, "lines"),
+        legend.position = "none") +
+  geom_hline(aes(yintercept = mean(CPUEstd, na.rm = TRUE)),
+             colour = "black", linetype ="longdash", size = .5)
+isl_yr
+#isl_yr %+% subset(metadata_ARU, session_year %in% c("2016", "2017", "2018", "2021"))
+#ggsave(width = 7, height = 5, dpi=300, filename = "~/WERC-SC/ASSP_share/figures/CPUE_ARUsites.pdf")
+ggsave(width = 8, height = 5, here("Figures", "cpue_ARU_sites.png"))
 ```
 This graph shows how catches varied across islands in 2016 - 2018, the years in which acoustic data was collected.  This graph is comprable to the call rate outputs graphs being generated by Kerry.
 
