@@ -2,7 +2,8 @@ library(here)
 library(tidyverse)
 captures <- readRDS(here("Working", "captures.RDS")) %>%
   filter(recapture != "SNR" &
-           band_no != "unbanded") %>%
+           band_no != "notbanded") %>%
+  filter(species == "ASSP") %>%
   arrange(session_date)
 
 inds <- unique(captures$band_no)
@@ -10,6 +11,7 @@ inds <- unique(captures$band_no)
 enc <- captures %>%
   group_by(band_no) %>%
   summarize(n = n()) %>%
+  filter(n != 1) %>%
   arrange(desc(n))
 
 # ind 1401-56230
