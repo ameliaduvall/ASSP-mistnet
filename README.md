@@ -28,9 +28,9 @@ Contains versions of all figures.
 
 ### Required Packages and Versions Used 
 
-R version 4.4.1 (2024-06-14)
-Platform: aarch64-apple-darwin20
-Running under: macOS 15.6.1
+R version 4.4.1 (2024-06-14)  
+Platform: aarch64-apple-darwin20  
+Running under: macOS 15.6.1  
 
 ### Details of Article 
 
