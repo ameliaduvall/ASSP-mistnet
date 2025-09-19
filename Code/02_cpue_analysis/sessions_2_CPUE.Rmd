@@ -1,7 +1,7 @@
 ---
 title: "Ashy Storm-Petrel Catch-Per-Unit-Effort Estimation for Channel Islands National Park"
 author: "Amelia J. DuVall & Emma Kelsey"
-date: "8/27/2020"
+date: '`r paste0("v. ", Sys.Date())`'
 output: pdf_document
 ---
 
@@ -27,23 +27,23 @@ This is `r paste0("v.", (Sys.Date()))`
 
 ## Read-in data
 ```{r readin}
-# sessions <- readRDS(here::here("Working", "sessions.RDS"))
-# captures <- readRDS(here::here("Working", "captures.RDS"))
-sessions <- readRDS(here::here("Data", "database", "sessions.RDS"))
-captures <- readRDS(here::here("Data", "database", "captures.RDS"))
+sessions <- readRDS(here::here("Data", "cleaned_data", "sessions.RDS")) # mistnet session data
+captures <- readRDS(here::here("Data", "cleaned_data", "captures.RDS")) # banding data
 
-# Check for duplicated session_IDs in sessions. This will affect joining data frames by session_ID. 
+# Check for duplicated session_IDs in sessions. 
+#This will affect joining data frames by session_ID. 
 any(duplicated(sessions$session_ID))
 
 # Check for duplicated catch_IDs in captures.
 any(duplicated(captures$catch_ID))
 
-# Filter to ASSP spp only and remove SNRs and unbanded individuals
+# Filter to ASSP spp only 
+# remove same night recaptures (SNRs) and unbanded individuals
 ASSP <- captures %>%
-  filter(species == "ASSP" & recapture != "SNR" & band_no != "notbanded") # 3799 observations
+  filter(species == "ASSP" & recapture != "SNR" & band_no != "notbanded") 
 
 notbanded <- captures %>%
-  filter(species == "ASSP" & band_no == "notbanded") # 20 unbanded ASSP
+  filter(species == "ASSP" & band_no == "notbanded") 
 
 LESP <- captures %>%
   filter(species == "LHSP" & recapture != "SNR" & band_no != "notbanded") %>%
@@ -52,148 +52,124 @@ LESP <- captures %>%
 ```
 
 ## Add new fields
-### Apparent Sunset, Standard Ending, Minutes, Minutes (Standard)
+### Format sessions data 
 ```{r v1}
-# # create dataframe to run sunset function on
-# sun_vec <- sessions %>%  
-#   transmute(date = session_date, lat = lat, lon = long, site_code = site_code, session_ID = session_ID)
-# 
-# # get apparent sunset times, calculate standard ending based on sunset and join back with CPUE database
-# cpue_v1 <- getSunlightTimes(data = sun_vec,
-#                                     keep = c("sunset"), tz = "PST8PDT") %>% 
-#   mutate(std_ending = sunset + lubridate::hours(5) + lubridate::minutes(18)) %>% # standard ending = 5.3 hours after sunset
-#   rename(app_sunset = sunset) %>%
-# left_join(sun_vec, by = c("date", "lat", "lon")) %>%
-#   dplyr::select(-date, -lat, -lon) %>%
-#   left_join(sessions, by = c("session_ID", "site_code")) %>% 
-#   # calculate total number of minutes net was open, as well as total number of minutes before standard ending
-#   mutate(min_1 = as.numeric(net_close_1 - net_open_1),
-#          min_2 = as.numeric(net_close_2 - net_open_2),
-#          min_3 = as.numeric(net_close_3 - net_open_3),
-#          min_4 = as.numeric(net_close_4 - net_open_4),
-#          min_5 = as.numeric(net_close_5 - net_open_5)) %>% 
-#   mutate_at(c("min_1", "min_2", "min_3", "min_4", "min_5"), .funs = ~replace_na(., 0)) %>%
-#   mutate(net_close_1_std = if_else(net_close_1 > std_ending, std_ending, net_close_1),
-#          net_close_2_std = if_else(net_close_2 > std_ending, std_ending, net_close_2),
-#          net_close_3_std = if_else(net_close_3 > std_ending, std_ending, net_close_3),
-#          net_close_4_std = if_else(net_close_4 > std_ending, std_ending, net_close_4),
-#          net_close_5_std = if_else(net_close_5 > std_ending, std_ending, net_close_5),
-#          min_1_std = as.numeric(net_close_1_std - net_open_1),
-#          min_2_std = as.numeric(net_close_2_std - net_open_2),
-#          min_3_std = as.numeric(net_close_3_std - net_open_3),
-#          min_4_std = as.numeric(net_close_4_std - net_open_4),
-#          min_5_std = as.numeric(net_close_5_std - net_open_5)) %>% 
-#   mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace(., .<0, 0)) %>%
-#   mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace_na(., 0)) %>%
-#   mutate(min = as.numeric(min_1 + min_2 + min_3 + min_4 + min_5),
-#          min_std = min_1_std + min_2_std + min_3_std + min_4_std + min_5_std,
-#          min = as.double(if_else(min < 0, "0", as.character(min))),
-#          min = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min))),
-#          min_std = as.double(if_else(min_std <0, "0", as.character(min_std))), 
-#          min_std = as.double(if_else(min_std == 0, "NA", as.character(min_std))),# new line
-#          min_std = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min_std)))) %>%
-#   dplyr::select(-min_1:-min_5_std) %>%
-#   arrange(session_year) %>%
-#   filter(TRUE)
+## function to convert difftime to minutes
+mins <- function(x) lubridate::time_length(x, unit = "minutes")  
 
+## create dataframe to run sunset function on
+sun_vec <- sessions %>%
+  transmute(date = session_date, lat = lat, lon = long, 
+            site_code = site_code, session_ID = session_ID) 
 
-mins <- function(x) lubridate::time_length(x, unit = "minutes")  # helper
-
-cpue_v1 <- getSunlightTimes(data = sun_vec, keep = "sunset", tz = "America/Los_Angeles") %>%
-  mutate(
-    std_ending = sunset + hours(5) + minutes(18),    # 5.3 hours after sunset
-    app_sunset = sunset
-  ) %>%
+## add new variables to cpue df
+cpue_v1 <- getSunlightTimes(data = sun_vec, 
+                            keep = "sunset", # compute sunset time
+                            tz = "America/Los_Angeles") %>%
+  mutate(std_ending = sunset + hours(5) + minutes(18), # 5.3 hours after sunset
+         app_sunset = sunset) %>%
   select(-sunset) %>%  # keep only app_sunset
   left_join(sun_vec, by = c("date", "lat", "lon")) %>%
-  left_join(sessions, by = c("session_ID", "site_code")) %>%
-  # raw minutes open (explicitly in minutes)
-  mutate(
-    min_1 = mins(net_close_1 - net_open_1),
-    min_2 = mins(net_close_2 - net_open_2),
-    min_3 = mins(net_close_3 - net_open_3),
-    min_4 = mins(net_close_4 - net_open_4),
-    min_5 = mins(net_close_5 - net_open_5)
-  ) %>%
+  rename(long = lon) %>%
+  left_join(sessions, by = c("session_ID", "site_code", "lat", "long")) %>%
+  # number of minutes that net was open (nets open/closed up to 5x/night)
+  mutate(min_1 = mins(net_close_1 - net_open_1),
+         min_2 = mins(net_close_2 - net_open_2),
+         min_3 = mins(net_close_3 - net_open_3),
+         min_4 = mins(net_close_4 - net_open_4),
+         min_5 = mins(net_close_5 - net_open_5)) %>%
+  # replace NAs in min columns with 0s
   mutate(across(all_of(paste0("min_", 1:5)), ~coalesce(.x, 0))) %>%
-  # cap closes at std_ending 
-  mutate(
-    net_close_1_std = pmin(net_close_1, std_ending),
-    net_close_2_std = pmin(net_close_2, std_ending),
-    net_close_3_std = pmin(net_close_3, std_ending),
-    net_close_4_std = pmin(net_close_4, std_ending),
-    net_close_5_std = pmin(net_close_5, std_ending)
-  ) %>%
-  # minutes before standard ending
-  mutate(
-    min_1_std = mins(net_close_1_std - net_open_1),
-    min_2_std = mins(net_close_2_std - net_open_2),
-    min_3_std = mins(net_close_3_std - net_open_3),
-    min_4_std = mins(net_close_4_std - net_open_4),
-    min_5_std = mins(net_close_5_std - net_open_5)
-  ) %>%
-  # clamp negatives to 0 and fill NAs with 0, numerically
+  # which came first, net close or 5.3 hours after sunset? use earlier
+  mutate(net_close_1_std = pmin(net_close_1, std_ending),
+         net_close_2_std = pmin(net_close_2, std_ending),
+         net_close_3_std = pmin(net_close_3, std_ending),
+         net_close_4_std = pmin(net_close_4, std_ending),
+         net_close_5_std = pmin(net_close_5, std_ending)) %>%
+  # number of minutes net was open using standard ending (5.3 hours after sunset)
+  mutate(min_1_std = mins(net_close_1_std - net_open_1),
+         min_2_std = mins(net_close_2_std - net_open_2),
+         min_3_std = mins(net_close_3_std - net_open_3),
+         min_4_std = mins(net_close_4_std - net_open_4),
+         min_5_std = mins(net_close_5_std - net_open_5)) %>%
+  # fill NAs with 0 and change any negative values to 0
   mutate(across(all_of(paste0("min_", 1:5, "_std")), ~pmax(coalesce(.x, 0), 0))) %>%
-  # totals
+  # totals across all segments
   mutate(
-    min     = rowSums(across(all_of(paste0("min_", 1:5))), na.rm = FALSE),
+    #total minutes of effort (uncapped)
+    min = rowSums(across(all_of(paste0("min_", 1:5))), na.rm = FALSE),
+    # total minutes capped at standed ending (5.3 hours after sunset)
     min_std = rowSums(across(all_of(paste0("min_", 1:5, "_std"))), na.rm = FALSE),
-    # numeric-safe fixes (no strings)
-    min     = if_else(min < 0, 0, min),
-    min     = if_else(is.na(net_open_1), 0, min),
-    # if you truly want 0 -> NA for min_std, do it numerically
+    # making sure there are no negative totals
+    min = if_else(min < 0, 0, min),
+    min = if_else(is.na(net_open_1), 0, min),
+    # treat 0 mins (for std) as NA to indicate there was no effort
     min_std = if_else(min_std == 0, NA_real_, min_std),
-    min_std = if_else(is.na(net_open_1), 0, min_std)
-  ) %>%
-  # drop just the intended columns
-  select(-all_of(c(
-    paste0("min_", 1:5),
-    paste0("min_", 1:5, "_std")
-  ))) %>%
+    # if net did not open for the first time, then 0 minutes
+    min_std = if_else(is.na(net_open_1), 0, min_std)) %>%
+  # drop just the unneccessary columns
+  select(-all_of(c(paste0("min_", 1:5), paste0("min_", 1:5, "_std")))) %>%
   arrange(session_year)
 
-# check min values
+## check minute values
 summary(cpue_v1$min/60) # more intuitive to think in terms of hours
 summary(cpue_v1$min_std/60)
 ```
 
-### ASSP, ASSP, CPUEraw, CPUEstd
+### Format capture data (ASSP only)
 ```{r v2}
 ASSP_std <- ASSP %>%
-  dplyr::select(-c("flagged", "notes")) %>% # remove these fields since they exist in sessions w/ diff values
-  left_join(cpue_v1, by = c("site_code", "session_ID", "lat", "long", "session_date", "session_month", "session_day", "session_year", "island_code", "subisland_code")) %>%  # join captures and cpue_v1 dataframes
-  mutate(std = if_else(std_ending > capture_date, "1", "0"), # if bird was caught before std_ending = 1, after = 0
-         # SNR = mosaic::derivedFactor(
-         #   "Y" = (recapture == "SNR"), # identify same night recaptures to be removed from CPUE
-         #   "N" = (recapture =="N" | recapture =="Y"), # recaps from other nights still count 
-         #   .default = NA),
+  # remove these fields since they exist in sessions w/ diff values
+  dplyr::select(-c("flagged", "notes")) %>% 
+  # join ASSP captures and cpue_v1 dataframes
+  left_join(cpue_v1, by = c("site_code", "session_ID", "lat", "long", "session_date", 
+                            "session_month", "session_day", "session_year", "island_code", 
+                            "subisland_code")) %>%  
+  # if bird was caught before std_ending give it a "1", otherwise give it a "0"
+  mutate(std = if_else(std_ending > capture_date, "1", "0"), 
+         # assume individual is a breeder if brood patch (BP) indicates de/re-feathering
          assumeBreed = mosaic::derivedFactor(
            "Y" = (BP == "B" | BP == "2" | BP == "3" | BP == "4"),
-           "N" = (BP == "D" | BP == "d" | BP == "0" | BP == "5" | BP == "PD" | BP == "1" | BP == "1.5" | BP == "4.5"),
+           "N" = (BP == "D" | BP == "d" | BP == "0" | BP == "5" | 
+                    BP == "PD" | BP == "1" | BP == "1.5" | BP == "4.5"),
            .default = NA),
-         catchPastSS = capture_date - app_sunset) %>% # catchPastSS = capture time (min) past sunset
+         # capture time (min) past sunset
+         catchPastSS = capture_date - app_sunset) %>% 
   filter(TRUE)
 
-# sum catches for each species and night
+# summarize catches for each night
 cpue <- ASSP_std %>%
   group_by(session_ID) %>%
-  summarise(ASSP = n(), 
+  summarise(
+            # total number of ASSP captured
+            ASSP = n(), 
+            # total number of ASSP captured before standard ending 
             ASSPstd = sum(std == "1"),
+            # total number of brood patches recorded
             BPct = count(!is.na(BP)), 
-            BP_Y = sum(assumeBreed == "Y", na.rm = TRUE), # number of birds that have a broodpatch (2-4, B)
-            BP_N = sum(assumeBreed == "N", na.rm = TRUE)) %>% # number of birds that dont have a broodpatch (1, 1.5, 4.5, 5, PB, D)
+            # number of birds that have a broodpatch (2-4, B)
+            BP_Y = sum(assumeBreed == "Y", na.rm = TRUE), 
+            # number of birds that don't have a broodpatch (1, 1.5, 4.5, 5, PB, D)
+            BP_N = sum(assumeBreed == "N", na.rm = TRUE)) %>% 
   ungroup() %>%
   right_join(cpue_v1, by= c("session_ID")) %>%
-  mutate(CPUEraw =  ASSP/min,
-         CPUEstd = ASSPstd/min_std,
-         BPfreq_Y = BP_Y/BPct, # frequency of birds that have a broodpatch
-         BPfreq_N = BP_N/BPct) %>%
-  dplyr::select("session_ID", "island_code", "subisland_code", "site_code", "site_name",	"lat",	"long",	"session_date", 
-                "session_year", "session_month",	"session_day",	"series_ID",	"app_sunset",	"std_ending",	"net_open_1",
-                "net_close_1",	"net_open_2", "net_close_2",	"net_open_3",	"net_close_3",	"net_open_4",	"net_close_4", 
-                "net_open_5",	"net_close_5",	"min",	"min_std", "ASSP",	"ASSPstd",	"CPUEraw",	"CPUEstd", "BPfreq_Y",
-                "BPfreq_N", "net_mesh", "net_dim",	"spp_audio_file",	"dB_level", "speaker_system",	"org", "notes", 
-                "flagged",	"flagged_notes") %>%
+  mutate(
+    # raw CPUE (number of ASSP captured per minute)
+    CPUEraw =  ASSP/min,
+    # standard CPUE (number of ASSP captured per min within standard ending)
+    CPUEstd = ASSPstd/min_std,
+    # frequency of birds that have a brood patch
+    BPfreq_Y = BP_Y/BPct, 
+    # frequency of birds that don't have a brood patch
+    BPfreq_N = BP_N/BPct) %>%
+  dplyr::select("session_ID", "island_code", "subisland_code", "site_code", "site_name",	
+                "lat",	"long",	"session_date", "session_year", "session_month",	
+                "session_day",	"series_ID",	"app_sunset",	"std_ending",	"net_open_1",
+                "net_close_1",	"net_open_2", "net_close_2",	"net_open_3",	"net_close_3",	
+                "net_open_4",	"net_close_4", "net_open_5",	"net_close_5",	"min",	
+                "min_std", "ASSP",	"ASSPstd",	"CPUEraw",	"CPUEstd", "BPfreq_Y",
+                "BPfreq_N", "net_mesh", "net_dim",	"spp_audio_file",	"dB_level", 
+                "speaker_system",	"org", "notes", "flagged",	"flagged_notes") %>%
   arrange(desc(session_year))
 
 # Check new fields
@@ -203,14 +179,13 @@ chk <- cpue %>%
 sIDs <- unique(chk$session_ID)
 
 chkcaps <- captures %>%
-  filter(session_ID %in% c(sIDs))
-## There were no ASSP captures during these sessions
+  filter(session_ID %in% c(sIDs)) # no ASSP captures (banded) during these sessions
 
 # Check code for missing BP scores
 BPsNA <- ASSP %>%
   filter(is.na(BP))
-BPsIDS <- unique(BPsNA$session_ID)
-## these are session_IDs with NA for BP scores
+
+BPsIDS <- unique(BPsNA$session_ID) # session_IDs with NA for BP scores
 
 # Look at one of these sessions
 chk.cpue <- cpue %>%
@@ -231,6 +206,6 @@ summary(cpue$CPUEstd)
 ## Export out
 ```{r export}
 # Exporting as RDS will preserve date/time fields
-saveRDS(cpue, here("Data", "database", "cpue.RDS"))
-write.csv(cpue, here("Data", "database", "cpue.csv"), row.names = FALSE)
+#saveRDS(cpue, here("Data", "cleaned_data", "cpue.RDS"))
+#write.csv(cpue, here("Data", "cleaned_data", "cpue.csv"), row.names = FALSE)
 ```
