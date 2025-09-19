@@ -35,7 +35,3 @@ Running under: macOS 15.6.1
 ### Details of Article 
 
 Information regarding this USGS data release can be found [here](https://www.usgs.gov/data/catch-unit-effort-cpue-banding-and-morphometric-data-collected-during-nocturnal-mist-netting).
-
-### How to Use this Repository 
-
-(Provide some guidance here to users, is there an order in which they should run things, for example?)  
