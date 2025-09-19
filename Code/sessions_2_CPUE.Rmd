@@ -54,47 +54,103 @@ LESP <- captures %>%
 ## Add new fields
 ### Apparent Sunset, Standard Ending, Minutes, Minutes (Standard)
 ```{r v1}
-# create dataframe to run sunset function on
-sun_vec <- sessions %>%  
-  transmute(date = session_date, lat = lat, lon = long, site_code = site_code, session_ID = session_ID)
+# # create dataframe to run sunset function on
+# sun_vec <- sessions %>%  
+#   transmute(date = session_date, lat = lat, lon = long, site_code = site_code, session_ID = session_ID)
+# 
+# # get apparent sunset times, calculate standard ending based on sunset and join back with CPUE database
+# cpue_v1 <- getSunlightTimes(data = sun_vec,
+#                                     keep = c("sunset"), tz = "PST8PDT") %>% 
+#   mutate(std_ending = sunset + lubridate::hours(5) + lubridate::minutes(18)) %>% # standard ending = 5.3 hours after sunset
+#   rename(app_sunset = sunset) %>%
+# left_join(sun_vec, by = c("date", "lat", "lon")) %>%
+#   dplyr::select(-date, -lat, -lon) %>%
+#   left_join(sessions, by = c("session_ID", "site_code")) %>% 
+#   # calculate total number of minutes net was open, as well as total number of minutes before standard ending
+#   mutate(min_1 = as.numeric(net_close_1 - net_open_1),
+#          min_2 = as.numeric(net_close_2 - net_open_2),
+#          min_3 = as.numeric(net_close_3 - net_open_3),
+#          min_4 = as.numeric(net_close_4 - net_open_4),
+#          min_5 = as.numeric(net_close_5 - net_open_5)) %>% 
+#   mutate_at(c("min_1", "min_2", "min_3", "min_4", "min_5"), .funs = ~replace_na(., 0)) %>%
+#   mutate(net_close_1_std = if_else(net_close_1 > std_ending, std_ending, net_close_1),
+#          net_close_2_std = if_else(net_close_2 > std_ending, std_ending, net_close_2),
+#          net_close_3_std = if_else(net_close_3 > std_ending, std_ending, net_close_3),
+#          net_close_4_std = if_else(net_close_4 > std_ending, std_ending, net_close_4),
+#          net_close_5_std = if_else(net_close_5 > std_ending, std_ending, net_close_5),
+#          min_1_std = as.numeric(net_close_1_std - net_open_1),
+#          min_2_std = as.numeric(net_close_2_std - net_open_2),
+#          min_3_std = as.numeric(net_close_3_std - net_open_3),
+#          min_4_std = as.numeric(net_close_4_std - net_open_4),
+#          min_5_std = as.numeric(net_close_5_std - net_open_5)) %>% 
+#   mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace(., .<0, 0)) %>%
+#   mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace_na(., 0)) %>%
+#   mutate(min = as.numeric(min_1 + min_2 + min_3 + min_4 + min_5),
+#          min_std = min_1_std + min_2_std + min_3_std + min_4_std + min_5_std,
+#          min = as.double(if_else(min < 0, "0", as.character(min))),
+#          min = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min))),
+#          min_std = as.double(if_else(min_std <0, "0", as.character(min_std))), 
+#          min_std = as.double(if_else(min_std == 0, "NA", as.character(min_std))),# new line
+#          min_std = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min_std)))) %>%
+#   dplyr::select(-min_1:-min_5_std) %>%
+#   arrange(session_year) %>%
+#   filter(TRUE)
 
-# get apparent sunset times, calculate standard ending based on sunset and join back with CPUE database
-cpue_v1 <- getSunlightTimes(data = sun_vec,
-                                    keep = c("sunset"), tz = "PST8PDT") %>% 
-  mutate(std_ending = sunset + lubridate::hours(5) + lubridate::minutes(18)) %>% # standard ending = 5.3 hours after sunset
-  rename(app_sunset = sunset) %>%
-left_join(sun_vec, by = c("date", "lat", "lon")) %>%
-  dplyr::select(-date, -lat, -lon) %>%
-  left_join(sessions, by = c("session_ID", "site_code")) %>% 
-  # calculate total number of minutes net was open, as well as total number of minutes before standard ending
-  mutate(min_1 = net_close_1 - net_open_1,
-         min_2 = net_close_2 - net_open_2,
-         min_3 = net_close_3 - net_open_3,
-         min_4 = net_close_4 - net_open_4,
-         min_5 = net_close_5 - net_open_5) %>% 
-  mutate_at(c("min_1", "min_2", "min_3", "min_4", "min_5"), .funs = ~replace_na(., 0)) %>%
-  mutate(net_close_1_std = if_else(net_close_1 > std_ending, std_ending, net_close_1),
-         net_close_2_std = if_else(net_close_2 > std_ending, std_ending, net_close_2),
-         net_close_3_std = if_else(net_close_3 > std_ending, std_ending, net_close_3),
-         net_close_4_std = if_else(net_close_4 > std_ending, std_ending, net_close_4),
-         net_close_5_std = if_else(net_close_5 > std_ending, std_ending, net_close_5),
-         min_1_std = net_close_1_std - net_open_1,
-         min_2_std = net_close_2_std - net_open_2,
-         min_3_std = net_close_3_std - net_open_3,
-         min_4_std = net_close_4_std - net_open_4,
-         min_5_std = net_close_5_std - net_open_5) %>% 
-  mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace(., .<0, 0)) %>%
-  mutate_at(c("min_1_std", "min_2_std", "min_3_std", "min_4_std", "min_5_std"), .funs = ~replace_na(., 0)) %>%
-  mutate(min = as.numeric(min_1 + min_2 + min_3 + min_4 + min_5),
-         min_std = min_1_std + min_2_std + min_3_std + min_4_std + min_5_std,
-         min = as.double(if_else(min < 0, "0", as.character(min))),
-         min = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min))),
-         min_std = as.double(if_else(min_std <0, "0", as.character(min_std))), 
-         min_std = as.double(if_else(min_std == 0, "NA", as.character(min_std))),# new line
-         min_std = as.double(if_else(as.character(net_open_1) == "NA", "0", as.character(min_std)))) %>%
-  dplyr::select(-min_1:-min_5_std) %>%
-  arrange(session_year) %>%
-  filter(TRUE)
+
+mins <- function(x) lubridate::time_length(x, unit = "minutes")  # helper
+
+cpue_v1 <- getSunlightTimes(data = sun_vec, keep = "sunset", tz = "America/Los_Angeles") %>%
+  mutate(
+    std_ending = sunset + hours(5) + minutes(18),    # 5.3 hours after sunset
+    app_sunset = sunset
+  ) %>%
+  select(-sunset) %>%  # keep only app_sunset
+  left_join(sun_vec, by = c("date", "lat", "lon")) %>%
+  left_join(sessions, by = c("session_ID", "site_code")) %>%
+  # raw minutes open (explicitly in minutes)
+  mutate(
+    min_1 = mins(net_close_1 - net_open_1),
+    min_2 = mins(net_close_2 - net_open_2),
+    min_3 = mins(net_close_3 - net_open_3),
+    min_4 = mins(net_close_4 - net_open_4),
+    min_5 = mins(net_close_5 - net_open_5)
+  ) %>%
+  mutate(across(all_of(paste0("min_", 1:5)), ~coalesce(.x, 0))) %>%
+  # cap closes at std_ending 
+  mutate(
+    net_close_1_std = pmin(net_close_1, std_ending),
+    net_close_2_std = pmin(net_close_2, std_ending),
+    net_close_3_std = pmin(net_close_3, std_ending),
+    net_close_4_std = pmin(net_close_4, std_ending),
+    net_close_5_std = pmin(net_close_5, std_ending)
+  ) %>%
+  # minutes before standard ending
+  mutate(
+    min_1_std = mins(net_close_1_std - net_open_1),
+    min_2_std = mins(net_close_2_std - net_open_2),
+    min_3_std = mins(net_close_3_std - net_open_3),
+    min_4_std = mins(net_close_4_std - net_open_4),
+    min_5_std = mins(net_close_5_std - net_open_5)
+  ) %>%
+  # clamp negatives to 0 and fill NAs with 0, numerically
+  mutate(across(all_of(paste0("min_", 1:5, "_std")), ~pmax(coalesce(.x, 0), 0))) %>%
+  # totals
+  mutate(
+    min     = rowSums(across(all_of(paste0("min_", 1:5))), na.rm = FALSE),
+    min_std = rowSums(across(all_of(paste0("min_", 1:5, "_std"))), na.rm = FALSE),
+    # numeric-safe fixes (no strings)
+    min     = if_else(min < 0, 0, min),
+    min     = if_else(is.na(net_open_1), 0, min),
+    # if you truly want 0 -> NA for min_std, do it numerically
+    min_std = if_else(min_std == 0, NA_real_, min_std),
+    min_std = if_else(is.na(net_open_1), 0, min_std)
+  ) %>%
+  # drop just the intended columns
+  select(-all_of(c(
+    paste0("min_", 1:5),
+    paste0("min_", 1:5, "_std")
+  ))) %>%
+  arrange(session_year)
 
 # check min values
 summary(cpue_v1$min/60) # more intuitive to think in terms of hours
