@@ -2,7 +2,9 @@
 title: "ASSP_CPUE_finalGraphs.rmd"
 author: "EKelsey & ADuVall"
 date: "7/8/2020"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 This is `r paste0("v.", (Sys.Date()))`
 
@@ -11,7 +13,7 @@ This is `r paste0("v.", (Sys.Date()))`
 
 ```{r message = FALSE}
 ### SET WORKING DIRECTORY
-# setwd("~/WERC-SC/ASSP_share")
+# setwd("~/Users/ekelseyold/Documents/git/ASSP-mistnet/Data/cleaned_data")
 
 ## LOAD LIBRARIES
 library(tidyr)
@@ -24,26 +26,24 @@ library(EnvStats)
 library(here)
 # library(calecopal)
 library(cowplot)
-library(anchors)
+# library(anchors)
 library(gridExtra)
 library(pastecs)
 
 
 ### READ IN DATA
-# banding <- readRDS(here("ASSP_share", "captures.RDS"))
-# metadata <- readRDS(here("ASSP_share", "cpue.RDS")) 
-banding <- readRDS(here("Data", "database", "captures.RDS"))
-metadata <- readRDS(here("Data", "database", "cpue.RDS"))
+banding <- readRDS(here("Data", "cleaned_data", "captures.RDS"))
+metadata <- readRDS(here("Data", "cleaned_data", "cpue.RDS"))
 #wx_metadata <- readRDS(here("ASSP_share", "mistnet_w_weather.RDS")) 
 #wx_metadata_hrly <- readRDS(here("ASSP_share", "mistnet_w_weather_hrly.RDS")) 
 
-## Filter data to ASSP species and remove SNRs and unbanded individuals 
+## Filter data to ASSP species and remove same night recaptures (SNRs) and unbanded individuals 
 ASSP <- banding %>% 
   filter(species == "ASSP" & recapture != "SNR" & band_no != "notbanded")  # 3799 observations
   
 ASSP_BP <- ASSP %>% 
   filter(BP != "NR" & BP != "NA") %>% 
-  mutate(assumeBreed = mosaic::derivedFactor(
+  mutate(assumeBreed = mosaic::derivedFactor( # assumed breeding is based on broodpatch score, which was recorded in multiple ways over the years
                 "Y" = (BP == "B" | BP == "b" | BP == "2" | BP == "3" | BP == "4"),
                 "N" = (BP == "D" | BP == "d" | BP == "0" | BP == "5" | BP == "PD" | BP == "pd" | BP == "1" | BP == "1.5" | BP == "4.5"),
                 .default = "ND")) %>% 
@@ -399,7 +399,7 @@ NOTE: the samples sizes at the top are the sum of CPUEbrd_std and CPUEstd
 
 ## CATCH TIMES
 ```{r catch times 1}
-# couldn't figure out how to calcuate catch time past sunset in R. Exported to excel and subtracted catch time from sunset time, then imported back:
+# couldn't figure out how to calcuLate catch time past sunset in R. Exported to excel and subtracted catch time from sunset time, then imported back:
 catches_rev <- read.csv('~/WERC-SC/ASSP_share/ASSP_CPUE_7_catchesPastSS_rev.csv') %>%  
   mutate_at(c("app_sunset", "std_ending", "capture_date", "release_date"),
             .funs = ~as.POSIXct(., format="%m/%d/%Y %H:%M")) %>% # SECONDS dropped from app_sunset and std_ending during transition to and from excel
