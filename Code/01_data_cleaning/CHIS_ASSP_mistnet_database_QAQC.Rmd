@@ -11,7 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This is `r paste0("v.", (Sys.Date()))`
 
-This document explains the QA/QC conducted on the Channel Islands National Park (CHIS) Ashy Storm-Petrel (ASSP) Mistnetting database (1994 - 2018). The database is an Excel file that contains (6) sheets: Banding, Banding_Data_Dictionary, CPUE, CPUE_Data_Dictionary, Mistnetting_Locations, Participant_Initials. The purpose of this exercise is to capture incongruent values in the database due errors in original data entry or bugs from data compilation and to improve the functioning of this document as a long-term database. We cannot verify observor errors (e.g., if errors were made while taking morphometric measurements and recorded as such). Whenever possible, we cross-referenced raw data (e.g., field notebooks or scanned data sheets) to verify and/or fix incongruent values. This document is divided into two categories: Banding QAQC and CPUE QAQC. Amelia DuVall conducted QAQC on the Banding data and Emma Kelsey conducted QAQC on the CPUE metadata. 
+This document explains the QA/QC conducted on the Channel Islands National Park (CHIS) Ashy Storm-Petrel (ASSP) Mistnetting database (1994 - 2018). The database is an Excel file that contains (6) sheets: Banding, Banding_Data_Dictionary, CPUE, CPUE_Data_Dictionary, Mistnetting_Locations, Participant_Initials. The purpose of this exercise is to capture incongruent values in the database due errors in original data entry or bugs from data compilation and to improve the functioning of this document as a long-term database. We cannot verify observor errors (e.g., if errors were made while taking morphometric measurements and recorded as such). Whenever possible, we cross-referenced raw data (e.g., field notebooks or scanned data sheets) to verify and/or fix incongruent values. 
+This document is divided into two categories: Banding QAQC and CPUE QAQC. Amelia DuVall conducted QAQC on the Banding data and Emma Kelsey conducted QAQC on the CPUE metadata.
+The exploration of most variables ends with code (commented out) to export flagged data for manual review.
 
 ## Load libraries
 ```{r libraries, message = FALSE}
@@ -24,8 +26,8 @@ library(here)
 
 ## Read-in data and set-up for analysis
 ```{r readin}
-captures.raw <- read.csv(here("Working", "captures.csv"), na.strings = c("NA", "ND"))
-cpue.raw <- read.csv(here("Working", "cpue.csv"), na.strings = c("NA", "ND"))
+captures.raw <- read.csv(here("Data", "raw_data", "captures.csv"), na.strings = c("NA", "ND"))
+cpue.raw <- read.csv(here("Data", "raw_data", "cpue.csv"), na.strings = c("NA", "ND"))
 
 # Fix day/times
 captures <- captures.raw %>%
